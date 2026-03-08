@@ -30,6 +30,74 @@
                     required
                 >
             </div>
+            <!--PATIENT NAME-->
+            <div class="mb-3">
+                <label for="patient_name" class="form-control fw-bold">Patient Name</label>
+                <input type="text"
+                       id="patient_name"
+                       name="patient_name"
+                       class="form-control"
+                       placeholder="Enter Patient Name"
+                       required>
+            </div>
+            <!--SELECT AGE-->
+            <div class="mb-3">
+                 <label for="age" class="form-label fw-bold">Age</label>
+                 <input
+                      type="number"
+                      id="age"
+                      name="age"
+                      class="form-control"
+                      min="1"
+                      placeholder="Enter Age"
+                      max="99"
+                      placeholder="Enter Age"
+                      required>
+            </div>
+            <!--SELECT GENDER-->
+            <div class="mb-3">
+                <label for="gender" class="form-label fw-bold">Gender</label>
+                <select id="gender"
+                        name="gender"
+                        class="form-select"
+                        required>
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    </select>
+            </div>
+            <!--PREVIOUS CURRENT HEALTH PROBLEM-->
+            <div class="mb-3">
+                 <label for="previous_problem" class="form-label fw-bold">Previous Health Problem</label>
+                 <textarea id="previous_problem"
+                          name="previous_problem"
+                          class="form-control"
+                          rows="2"
+                          placeholder="Enter previous health problems (if any)">
+                  </textarea>
+                </div>
+            <!--CURRENT HEALTH PROBLEM-->
+            <div class="mb-3">
+                 <label for="current_problem" class="form-label fw-bold">Current Health Problem</label>
+                 <textarea id="current_problem"
+                         name="current_problem"
+                         class="form-control"
+                         rows="2"
+                         placeholder="Describe your current health problem"
+                         required>
+                  </textarea>
+            </div>
+            <!--WHATSAPP NUMBER-->
+            <div class="mb-3">
+                 <label for="Whatsapp" class="form-label fw-bold">Whatsapp Number</label>
+                 <input type="tel"
+                        id="Whatsapp"
+                        name="Whatsapp"
+                        class="form-control"
+                        maxlength="10"
+                        placeholder="Enter 10-digit Whatsapp number"
+                        required>
+            </div>
 
             <!-- ⏰ SLOT DROPDOWN -->
             <div class="mb-3">
@@ -56,6 +124,7 @@
 const datePicker = document.getElementById("datePicker");
 const slotDropdown = document.getElementById("slotDropdown");
 const form = document.getElementById("bookingForm");
+
 
 const slotsUrl = "{% url 'appointments:slots_by_date' doctor.id %}";
 const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -113,6 +182,8 @@ form.addEventListener("submit", function (e) {
     const slotId = slotDropdown.value;
     const consultationType =
         document.getElementById("consultationType").value || "ONLINE";
+        
+    
 
     if (!slotId) {
         alert("Please select a slot");
@@ -125,9 +196,15 @@ form.addEventListener("submit", function (e) {
             "Content-Type": "application/json",
             "X-CSRFToken": csrfToken
         },
-        body: JSON.stringify({
-            slot_id: slotId,
-            consultation_type: consultationType
+        body:JSON.stringify({
+            slot_id:slotId,
+            consultation_type:consultationType,
+            patient_name: document.getElementById("patient_name") .value,
+            age: document.getElementById("age") .value,
+            gender: document.getElementById("gender") .value,
+            previous_health_problem: document.getElementById("previous_problem") .value,
+            current_health_problem: document.getElementById("current_problem") .value,
+            whatsapp_number: document.getElementById("Whatsapp") .value,
         })
     })
     .then(res => res.json())

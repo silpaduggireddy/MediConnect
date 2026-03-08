@@ -8,6 +8,15 @@ from django.views.decorators.http import require_POST
 from doctors.models import Doctor
 from appointments.models import Appointment, TimeSlot
 
+from io import BytesIO
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+
 
 # -------------------------
 # Helper
@@ -53,6 +62,79 @@ def doctor_slots(request, doctor_id):
         "today": timezone.now().date()
     })
 
+
+# -------------------------
+# DOWNLOAD APPOINTMENTS (FILTERED OR ALL BASED ON AVAILABILITY)
+# -------------------------
+@login_required
+def download_appointments(request, doctor_id):
+    if not staff_only(request):
+        return redirect("phone_register")
+
+    doctor = get_object_or_404(Doctor, id=doctor_id)
+    selected_date = request.GET.get("date")
+    sort = request.GET.get("sort", "desc")
+
+    appointments = Appointment.objects.filter(doctor=doctor)
+    if selected_date:
+        appointments = appointments.filter(slot__date=selected_date)
+
+    appointments = appointments.order_by(
+        "created_at" if sort == "asc" else "-created_at"
+    )
+
+    # Debug: print appointments in console
+    print("Appointments:", list(appointments.values()))
+
+    # Create PDF in memory
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+
+    elements = []
+    styles = getSampleStyleSheet()
+    elements.append(Paragraph(f"Appointments for {doctor.name}", styles["Heading1"]))
+
+    # Table header
+    data = [
+        ["S.No.", "Patient Name", "Age", "Gender", "Previous Problem",
+         "Current Problem", "Whatsapp", "Slot", "Booked On", "Status", "Payment"]
+    ]
+
+    # Table rows
+    for idx, appt in enumerate(appointments, start=1):
+        
+        # print(appointments.count)
+        data.append([
+            idx,
+            appt.patient_name,
+            appt.age,
+            appt.gender,
+            appt.previous_health_problem,
+            appt.current_health_problem,
+            appt.whatsapp_number,
+            appt.slot,
+            appt.created_at.strftime("%Y-%m-%d"),
+            appt.status,
+            appt.payment_status,
+        ])
+
+    # Build table
+    table = Table(data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+        ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename=f"appointments_{doctor_id}.pdf")
 
 @login_required
 def book_clinic_appointment(request, doctor_id):

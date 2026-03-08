@@ -19,4 +19,5 @@ urlpatterns = [
     path("appointments/<int:appointment_id>/upload-report/",upload_report,name="upload_report"),
     path("reports/<int:report_id>/delete/",delete_report,name="delete_report"),
     path("reports/<int:report_id>/view/",views.view_report,name="view_report"),
+    path("download-invoice/<int:appointment_id>/",views.download_invoice,name="download_invoice"),
 ]

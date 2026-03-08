@@ -8,6 +8,8 @@
 
     <p><strong>Doctor:</strong> {{ appointment.doctor.name }}</p>
     <p><strong>Specialization:</strong> {{ appointment.doctor.specialization }}</p>
+    <p><strong>Patient Name:</strong>{{ appointment.patient_name }}</p>
+    
 
     <p>
         <strong>Date:</strong> {{ appointment.slot.date }} <br>
@@ -18,6 +20,11 @@
     <p class="text-muted mt-2">
         Your slot has been successfully booked and locked.
     </p>
+    <!-- DOWNLOAD PDF BUTTON -->
+    <a href="{% url 'appointments:download_invoice' appointment.id %}"
+        class="btn btn-outline-primary mt-3">
+        Download Appointment Confirmation
+    </a>
 
     <!-- 🆕 UPLOAD REPORTS BUTTON -->
     <a href="{% url 'appointments:upload_report' appointment.id %}"

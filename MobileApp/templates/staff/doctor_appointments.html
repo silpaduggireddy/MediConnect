@@ -32,6 +32,13 @@
                onchange="this.form.submit()">
     </div>
 
+    <div class="col-md-2">
+        <a href="{% url 'staff:download_appointments' doctor.id %}"
+           class="btn btn-outline-secondary w-100">
+            Download
+        </a>
+    </div>
+
     <input type="hidden" name="sort" value="{{ sort }}">
 
     {% if selected_date %}
@@ -41,6 +48,7 @@
             Clear
         </a>
     </div>
+
     {% endif %}
 </form>
 
@@ -50,6 +58,12 @@
     <thead class="table-dark">
         <tr>
             <th>S.No.</th>
+            <th>Patient Name</th>
+            <th>Age</th>
+            <th>Gender</th>
+            <th>Previous problem</th>
+            <th>Current problem</th>
+            <th>Whatsapp</th>
             <th>Slot</th>
             <th>Booked On</th>
             <th>Status</th>
@@ -62,6 +76,12 @@
     {% for a in appointments %}
     <tr>
         <td>{{ forloop.counter }}</td>
+        <td>{{ a.patient_name }}</td>
+        <td>{{ a.age }}</td>
+        <td>{{ a.gender }}</td>
+        <td>{{ a.previous_health_problem }}</td>
+        <td>{{ a.current_health_problem }}</td>
+        <td>{{ a.whatsapp_number }}</td>
 
         <td>
             {{ a.slot.date }}<br>
@@ -157,3 +177,5 @@
 </a>
 
 {% endblock %}
+
+

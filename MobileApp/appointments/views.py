@@ -9,6 +9,7 @@ from datetime import timedelta, datetime, time, date
 
 from .models import TimeSlot, Appointment, AppointmentReport
 from doctors.models import Doctor
+from django.http import HttpResponse
 
 
 # ------------------------
@@ -99,6 +100,13 @@ def available_slots_by_date(request, doctor_id):
 def book_appointment(request):
     slot_id = request.data.get("slot_id")
     consultation_type = request.data.get("consultation_type", "ONLINE")
+    patient_name = request.data.get("patient_name")
+    age = request.data.get("age")
+    gender = request.data.get("gender")
+    previous_health_problem = request.data.get("previous_health_problem")
+    current_health_problem = request.data.get("current_health_problem")
+    whatsapp_number = request.data.get("whatsapp_number")
+
 
     with transaction.atomic():
         slot = get_object_or_404(
@@ -115,6 +123,12 @@ def book_appointment(request):
             doctor=doctor,
             slot=slot,
             consultation_type=consultation_type,
+            patient_name=patient_name,
+            age=age,
+            gender=gender,
+            previous_health_problem=previous_health_problem,
+            current_health_problem=current_health_problem,
+            whatsapp_number=whatsapp_number,
             amount=amount,
             payment_status="PENDING",
             status="BOOKED",
@@ -226,6 +240,50 @@ def upload_report(request, appointment_id):
         {"appointment": appointment}
     )
 
+from django.contrib import messages
+from django.shortcuts import redirect
+
+from django.http import FileResponse, HttpResponseForbidden
+from django.shortcuts import get_object_or_404
+from reportlab.pdfgen import canvas
+from io import BytesIO
+from .models import Appointment
+
+@login_required
+def download_invoice(request, appointment_id):
+    appointment = get_object_or_404(Appointment, id=appointment_id, user=request.user)
+
+    # Allow download only after confirmation
+    if appointment.consultation_type == "ONLINE" and appointment.payment_status != "PAID":
+        return HttpResponseForbidden("Download after appointment confirmation")
+
+    if appointment.consultation_type == "CLINIC" and appointment.status != "BOOKED":
+        return HttpResponseForbidden("Invalid appointment")
+
+    # Create PDF in memory
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer)
+
+    # Example content
+    p.setFont("Helvetica", 14)
+    p.drawString(100, 750, "Appointment Confirmation")
+    p.setFont("Helvetica", 12)
+    p.drawString(100, 720, f"Appointment ID: {appointment.id}")
+    p.drawString(100, 700, f"Doctor: {appointment.doctor.name}")
+    p.drawString(100, 680, f"Patient: {appointment.patient_name}")
+    p.drawString(100, 660, f"Consultation Type: {appointment.consultation_type}")
+    p.drawString(100, 640, f"Date: {appointment.slot.date}")
+    p.drawString(100, 620, f"Time: {appointment.slot.start_time}-{appointment.slot.end_time}")
+    p.drawString(100, 600, f"Status: {appointment.status}")
+    p.drawString(100, 580, f"Payment Status: {appointment.payment_status}")
+
+    p.showPage()
+    p.save()
+
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename=f"appointment_{appointment.patient_name}_{appointment.slot}.pdf")
+
+
 @login_required
 def delete_report(request, report_id):
     report = get_object_or_404(
@@ -242,7 +300,6 @@ def delete_report(request, report_id):
 
 from django.http import FileResponse
 from pathlib import Path
-
 from pathlib import Path
 
 @login_required

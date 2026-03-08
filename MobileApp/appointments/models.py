@@ -82,6 +82,12 @@ class Appointment(models.Model):
     )
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
     slot = models.OneToOneField(TimeSlot, on_delete=models.CASCADE)
+    patient_name= models.CharField(max_length=100)
+    age = models.PositiveIntegerField(null=True, blank=True)
+    gender = models.CharField(max_length=10,null=True, blank=True)
+    previous_health_problem = models.TextField(null=True, blank=True)
+    current_health_problem = models.TextField(null=True, blank=True)
+    whatsapp_number = models.CharField(max_length=10, null=True,blank=True)
 
     consultation_type = models.CharField(
         max_length=10,

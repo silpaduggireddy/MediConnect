@@ -9,6 +9,7 @@ from .views import (
     mark_payment_paid,
     update_appointment_status,
     slots_by_date,   # 🔥 ADD THIS
+    download_appointments,
 )
 
 app_name = "staff"
@@ -23,6 +24,12 @@ urlpatterns = [
         "doctor/<int:doctor_id>/appointments/",
         doctor_appointments,
         name="staff_doctor_appointments"
+    ),
+
+    path(
+        "doctor/<int:doctor_id>/download_appointments/",
+        download_appointments,
+        name="download_appointments"
     ),
 
     path(
