@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h3>Upload Medical Reports</h3>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label class="form-label">Select Reports</label>
+        <input
+            type="file"
+            name="reports"
+            class="form-control"
+            multiple
+            required
+        >
+    </div>
+
+    <button class="btn btn-primary">
+        Upload Reports
+    </button>
+</form>
+{% endblock %}
+

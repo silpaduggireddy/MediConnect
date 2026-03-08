@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Clinic Appointment{% endblock %}
+
+{% block content %}
+<h3 class="fw-bold mb-3">
+    🏥 Clinic Appointment – {{ doctor.name }}
+</h3>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <form id="bookingForm">
+            {% csrf_token %}
+
+            <!-- DATE PICKER -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Select Date</label>
+                <input
+                    type="date"
+                    id="datePicker"
+                    class="form-control"
+                    min="{{ today }}"
+                    required
+                >
+            </div>
+
+            <!-- SLOT DROPDOWN -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Available Slots</label>
+                <select
+                    id="slotDropdown"
+                    class="form-select"
+                    disabled
+                    required
+                >
+                    <option>Select date first</option>
+                </select>
+            </div>
+
+            <!-- SUBMIT -->
+            <button
+                type="submit"
+                class="btn btn-success w-100"
+            >
+                Book Clinic Appointment
+            </button>
+        </form>
+
+    </div>
+</div>
+
+<script>
+const datePicker   = document.getElementById("datePicker");
+const slotDropdown = document.getElementById("slotDropdown");
+const bookingForm  = document.getElementById("bookingForm");
+
+const slotsUrl = "{% url 'staff:slots_by_date' doctor.id %}";
+const bookUrl  = "{% url 'staff:book_clinic_appointment' doctor.id %}";
+const csrf     = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+// Initially disable dropdown
+slotDropdown.disabled = true;
+
+/* -----------------------------
+   DATE CHANGE → LOAD SLOTS
+----------------------------- */
+datePicker.addEventListener("change", function () {
+    const selectedDate = this.value;
+
+    // Reset
+    slotDropdown.innerHTML = '<option>Loading slots...</option>';
+    slotDropdown.disabled = true;
+
+    if (!selectedDate) {
+        slotDropdown.innerHTML = '<option>Select date first</option>';
+        return;
+    }
+
+    // ❌ Block weekends
+    const day = new Date(selectedDate).getDay();
+    if (day === 0 || day === 6) {
+        alert("Appointments are not available on weekends");
+        datePicker.value = "";
+        slotDropdown.innerHTML = '<option>Select a weekday</option>';
+        return;
+    }
+
+    fetch(`${slotsUrl}?date=${selectedDate}`)
+        .then(res => res.json())
+        .then(data => {
+            slotDropdown.innerHTML = "";
+
+            if (!data.slots || data.slots.length === 0) {
+                slotDropdown.innerHTML =
+                    '<option value="">No slots available</option>';
+                return;
+            }
+
+            slotDropdown.innerHTML =
+                '<option value="">Select a slot</option>';
+
+            data.slots.forEach(slot => {
+                const opt = document.createElement("option");
+                opt.value = slot.id;
+                opt.textContent = slot.label;
+                slotDropdown.appendChild(opt);
+            });
+
+            slotDropdown.disabled = false;
+        })
+        .catch(() => {
+            slotDropdown.innerHTML =
+                '<option value="">Error loading slots</option>';
+        });
+});
+
+/* -----------------------------
+   FINAL BOOKING
+----------------------------- */
+bookingForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const slotId = slotDropdown.value;
+    if (!slotId) {
+        alert("Please select a slot");
+        return;
+    }
+
+    const btn = bookingForm.querySelector("button");
+    btn.disabled = true;
+    btn.innerText = "Booking...";
+
+    fetch(bookUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrf
+        },
+        body: JSON.stringify({ slot_id: slotId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || "Clinic appointment booked successfully");
+        window.location.href = "{% url 'staff:staff_dashboard' %}";
+    })
+    .catch(() => {
+        alert("Something went wrong. Please try again.");
+        btn.disabled = false;
+        btn.innerText = "Book Clinic Appointment";
+    });
+});
+</script>
+
+{% endblock %}

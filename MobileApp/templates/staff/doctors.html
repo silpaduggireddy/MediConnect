@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>👨‍⚕️ Doctors</h3>
+
+<div class="row g-3">
+{% for d in doctors %}
+<div class="col-md-4">
+    <div class="card p-3 shadow-sm">
+        <h5>Dr. {{ d.name }}</h5>
+        <p class="text-muted">{{ d.specialization }}</p>
+
+        <a href="{% url 'staff:staff_doctor_slots' d.id %}"
+           class="btn btn-outline-primary btn-sm w-100 mb-2">
+            View Slots
+        </a>
+
+        <a href="{% url 'staff:staff_doctor_slots' d.id %}?book=1"
+           class="btn btn-success btn-sm w-100">
+            Add Booking
+        </a>
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}
+

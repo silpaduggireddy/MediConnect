@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}My Appointments{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">My Appointments</h3>
+
+{% if appointments %}
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Doctor</th>
+            <th>Specialization</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+            <th>Booked On</th>
+            <th>Action</th>
+            <th>Reports</th> <!-- 🆕 -->
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for appt in appointments %}
+        <tr>
+            <td>{{ appt.doctor.name }}</td>
+            <td>{{ appt.doctor.specialization }}</td>
+            <td>{{ appt.slot.date }}</td>
+            <td>{{ appt.slot.start_time }} – {{ appt.slot.end_time }}</td>
+
+            <td>
+                {% if appt.status == "BOOKED" %}
+                    <span class="badge bg-success">Booked</span>
+                {% else %}
+                    <span class="badge bg-secondary">{{ appt.status }}</span>
+                {% endif %}
+            </td>
+
+            <td>{{ appt.created_at|date:"d M Y, h:i A" }}</td>
+
+            <!-- ACTION COLUMN -->
+            <td>
+                {% if appt.status == "BOOKED" and not appt.is_past %}
+                    <button
+                        class="btn btn-sm btn-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelModal{{ appt.id }}">
+                        Cancel
+                    </button>
+
+                    <!-- Confirmation Modal -->
+                    <div class="modal fade" id="cancelModal{{ appt.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Cancel Appointment</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+
+                                <div class="modal-body">
+                                    <p>
+                                        Are you sure you want to cancel your appointment with
+                                        <strong>{{ appt.doctor.name }}</strong><br>
+                                        on <strong>{{ appt.slot.date }}</strong> at
+                                        <strong>{{ appt.slot.start_time }}</strong>?
+                                    </p>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button class="btn btn-secondary" data-bs-dismiss="modal">
+                                        No
+                                    </button>
+
+                                    <form method="post"
+                                          action="{% url 'appointments:cancel_appointment' appt.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">
+                                            Yes, Cancel
+                                        </button>
+                                    </form>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                {% elif appt.status == "BOOKED" and appt.is_past %}
+                    <span class="text-muted">Expired</span>
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </td>
+
+            <!-- 🆕 REPORTS COLUMN -->
+            <td>
+                {% if appt.reports.all %}
+                    <ul class="list-unstyled mb-2">
+                        {% for r in appt.reports.all %}
+                            <li class="d-flex justify-content-between align-items-center">
+                                <a href="{% url 'appointments:view_report' r.id %}">
+                                    View
+                                </a>
+
+
+                                <a href="{% url 'appointments:delete_report' r.id %}"
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Delete this report?');">
+                                    Delete
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <span class="text-muted">No reports</span>
+                {% endif %}
+
+                {% if appt.consultation_type == "CLINIC" or appt.payment_status == "PAID" %}
+                    <a href="{% url 'appointments:upload_report' appt.id %}"
+                       class="btn btn-sm btn-outline-primary mt-1">
+                        + Upload
+                    </a>
+                {% endif %}
+            </td>
+
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+    <p>No appointments found.</p>
+{% endif %}
+
+<a href="{% url 'services' %}" class="btn btn-primary mt-3">
+    Return to Home
+</a>
+{% endblock %}

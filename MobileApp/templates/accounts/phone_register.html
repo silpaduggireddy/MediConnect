@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-4">
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h4 class="text-center mb-4">Register with Phone</h4>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <input
+                            type="text"
+                            name="phone"
+                            class="form-control"
+                            placeholder="Enter phone number"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Send OTP
+                    </button>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+

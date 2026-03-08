@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Payment{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Payment</h2>
+
+<form method="post" action="{% url 'payment:payment_confirm' appointment.id %}">
+    {% csrf_token %}
+
+    <!-- 🔹 Appointment Details -->
+    <div class="mb-3">
+        <strong>Doctor:</strong> {{ appointment.doctor.name }} <br>
+        <strong>Date:</strong> {{ appointment.slot.date }} <br>
+        <strong>Time:</strong>
+        {{ appointment.slot.start_time }} – {{ appointment.slot.end_time }}
+    </div>
+
+    <!-- 🔹 Payment Mode -->
+    <div class="mb-3">
+        <label class="form-label">Select Payment Method</label>
+
+        <select name="method" class="form-select" required>
+            <option value="">-- Select --</option>
+            <option value="UPI">UPI</option>
+            <option value="CARD">Credit / Debit Card</option>
+            <option value="NET_BANKING">Net Banking</option>
+        </select>
+    </div>
+
+    <!-- 🔹 Amount -->
+    <div class="mb-3">
+        <label class="form-label">Amount</label>
+        <input
+            type="text"
+            class="form-control"
+            value="₹{{ appointment.amount }}"
+            readonly
+        >
+    </div>
+
+    <button type="submit" class="btn btn-success btn-lg w-100">
+        Pay Now
+    </button>
+</form>
+{% endblock %}

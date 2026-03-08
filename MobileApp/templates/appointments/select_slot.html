@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Select Slot{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">Book Appointment with {{ doctor.name }}</h3>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <!-- ❌ NO DIRECT PAYMENT HERE -->
+        <form id="bookingForm">
+            {% csrf_token %}
+
+            <!-- 🔹 Consultation type (ONLINE / CLINIC) -->
+            <input
+                type="hidden"
+                id="consultationType"
+                value="{{ request.GET.type|default:'ONLINE' }}"
+            >
+
+            <!-- 📅 DATE SELECT -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Select Date</label>
+                <input
+                    type="date"
+                    id="datePicker"
+                    class="form-control"
+                    min="{{ today }}"
+                    required
+                >
+            </div>
+
+            <!-- ⏰ SLOT DROPDOWN -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Available Slots</label>
+                <select
+                    id="slotDropdown"
+                    class="form-select"
+                    required
+                    disabled
+                >
+                    <option value="">Select a date first</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100">
+                Book Appointment
+            </button>
+        </form>
+
+    </div>
+</div>
+
+<script>
+const datePicker = document.getElementById("datePicker");
+const slotDropdown = document.getElementById("slotDropdown");
+const form = document.getElementById("bookingForm");
+
+const slotsUrl = "{% url 'appointments:slots_by_date' doctor.id %}";
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+/* 🚫 BLOCK WEEKENDS */
+datePicker.addEventListener("change", function () {
+    const selectedDate = new Date(this.value);
+    const day = selectedDate.getDay();
+
+    if (day === 0 || day === 6) {
+        alert("Appointments are not available on weekends");
+        this.value = "";
+        slotDropdown.innerHTML =
+            '<option value="">Select a weekday</option>';
+        slotDropdown.disabled = true;
+        return;
+    }
+
+    /* 📡 FETCH AVAILABLE SLOTS */
+    slotDropdown.innerHTML = '<option>Loading...</option>';
+    slotDropdown.disabled = true;
+
+    fetch(`${slotsUrl}?date=${this.value}`)
+        .then(res => res.json())
+        .then(data => {
+            slotDropdown.innerHTML = "";
+
+            if (!data.slots || data.slots.length === 0) {
+                slotDropdown.innerHTML =
+                    '<option value="">No slots available</option>';
+            } else {
+                slotDropdown.innerHTML =
+                    '<option value="">Select a slot</option>';
+
+                data.slots.forEach(slot => {
+                    const option = document.createElement("option");
+                    option.value = slot.id;
+                    option.textContent = slot.label;
+                    slotDropdown.appendChild(option);
+                });
+            }
+
+            slotDropdown.disabled = false;
+        })
+        .catch(() => {
+            slotDropdown.innerHTML =
+                '<option value="">Error loading slots</option>';
+        });
+});
+
+/* ✅ FINAL BOOKING LOGIC */
+form.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const slotId = slotDropdown.value;
+    const consultationType =
+        document.getElementById("consultationType").value || "ONLINE";
+
+    if (!slotId) {
+        alert("Please select a slot");
+        return;
+    }
+
+    fetch("{% url 'appointments:book_appointment' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+        },
+        body: JSON.stringify({
+            slot_id: slotId,
+            consultation_type: consultationType
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        /* 💳 ONLINE → GO TO PAYMENT */
+        if (data.status === "PAYMENT_REQUIRED") {
+            window.location.href = `/payment/${data.appointment_id}/`;
+
+            return;
+        }
+
+        /* 🏥 CLINIC → CONFIRM ONLY */
+        alert(data.message);
+        window.location.href = "{% url 'appointments:appointment_history' %}";
+    })
+    .catch(() => {
+        alert("Something went wrong. Please try again.");
+    });
+});
+</script>
+
+{% endblock %}

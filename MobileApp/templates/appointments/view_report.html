@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}View Report{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <h4 class="mb-3">📄 Medical Report</h4>
+
+    <p class="text-muted">
+        Uploaded on {{ report.uploaded_at|date:"d M Y, h:i A" }}
+    </p>
+
+    <div class="card p-3">
+        {% if is_pdf %}
+            <iframe
+                src="{{ report.file.url }}"
+                width="100%"
+                height="600px">
+            </iframe>
+        {% else %}
+            <img
+                src="{{ report.file.url }}"
+                class="img-fluid rounded"
+                alt="Medical Report">
+        {% endif %}
+    </div>
+
+    <a href="{% url 'appointments:appointment_history' %}"
+       class="btn btn-secondary mt-3">
+        ← Back to My Appointments
+    </a>
+
+</div>
+{% endblock %}

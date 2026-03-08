@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Training Programs{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Training Programs</h2>
+
+<div class="row">
+    {% for course in courses %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card shadow-sm h-100">
+
+            <!-- Status Badge -->
+            <div class="card-header bg-white border-0">
+                {% if course.status == "UPCOMING" %}
+                    <span class="badge bg-warning text-dark">Upcoming</span>
+                {% elif course.status == "ONGOING" %}
+                    <span class="badge bg-success">Ongoing</span>
+                {% else %}
+                    <span class="badge bg-secondary">Completed</span>
+                {% endif %}
+            </div>
+
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    {{ course.name }}
+                </h5>
+
+                <!-- Trainer -->
+                <p class="card-text mb-1">
+                    <strong>Trainer:</strong>
+                    {{ course.trainer_name }}
+                </p>
+
+                <!-- Dates -->
+                <p class="card-text mb-1">
+                    <strong>Start:</strong>
+                    {{ course.start_datetime|date:"d M Y H:i" }}
+                </p>
+
+                <p class="card-text mb-3">
+                    <strong>End:</strong>
+                    {{ course.end_datetime|date:"d M Y H:i" }}
+                </p>
+
+                <!-- Enroll Button -->
+                {% if course.status != "COMPLETED" %}
+                <a href="{% url 'course_enroll' course.id %}"
+                   class="btn btn-primary w-100">
+                    Enroll 
+                </a>
+                {% else %}
+                <button class="btn btn-secondary w-100" disabled>
+                    Enrollment Closed
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% empty %}
+    <div class="col-12 text-center">
+        <p class="text-muted">No training programs available</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Choose Doctor{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">Select a Doctor</h3>
+
+<div class="row">
+    {% for doctor in doctors %}
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+
+                    <h5 class="card-title">{{ doctor.name }}</h5>
+
+                    <p class="mb-1">
+                        <strong>Specialization:</strong> {{ doctor.specialization }}
+                    </p>
+
+                    <p class="mb-1">
+                        <strong>Experience:</strong> {{ doctor.experience_years }} years
+                    </p>
+
+                    <p class="mb-3">
+                        <strong>Consultation Fee:</strong>
+                        ₹{{ doctor.consultation_fee }}
+                    </p>
+
+                    <!-- 🔴 CRITICAL: preserve consultation type -->
+                    <a href="{% url 'appointments:select_slot' doctor.id %}?type={{ consultation_type }}"
+                       class="btn btn-primary w-100">
+                        Book Appointment
+                    </a>
+
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-muted">No doctors available.</p>
+    {% endfor %}
+</div>
+
+{% endblock %}

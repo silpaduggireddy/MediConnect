@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold mb-0">📅 Doctor Appointments</h3>
+        <span class="text-muted">Select a doctor to view bookings</span>
+    </div>
+
+    {% if doctors %}
+        <div class="row g-3">
+            {% for d in doctors %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm h-100 border-0">
+                    <div class="card-body d-flex flex-column">
+
+                        <!-- Doctor Name -->
+                        <h5 class="card-title fw-semibold mb-2">
+                            👨‍⚕️ Dr. {{ d.name }}
+                        </h5>
+
+                        <!-- Optional info (safe even if fields missing) -->
+                        {% if d.specialization %}
+                        <p class="text-muted mb-3">
+                            {{ d.specialization }}
+                        </p>
+                        {% endif %}
+
+                        <!-- Action -->
+                        <a href="{% url 'staff:staff_doctor_appointments' d.id %}"
+                           class="btn btn-primary mt-auto w-100">
+                            View Appointments →
+                        </a>
+
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            No doctors available
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

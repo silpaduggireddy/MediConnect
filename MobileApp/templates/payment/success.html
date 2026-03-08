@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card shadow p-4 text-center">
+    <h3 class="text-success">✅ Appointment Confirmed</h3>
+
+    <hr>
+
+    <p><strong>Doctor:</strong> {{ appointment.doctor.name }}</p>
+    <p><strong>Specialization:</strong> {{ appointment.doctor.specialization }}</p>
+
+    <p>
+        <strong>Date:</strong> {{ appointment.slot.date }} <br>
+        <strong>Time:</strong>
+        {{ appointment.slot.start_time }} – {{ appointment.slot.end_time }}
+    </p>
+
+    <p class="text-muted mt-2">
+        Your slot has been successfully booked and locked.
+    </p>
+
+    <!-- 🆕 UPLOAD REPORTS BUTTON -->
+    <a href="{% url 'appointments:upload_report' appointment.id %}"
+       class="btn btn-outline-primary mt-3">
+        📄 Upload Medical Reports
+    </a>
+
+    <br>
+
+    <a href="{% url 'services' %}" class="btn btn-primary mt-3">
+        Return to Home
+    </a>
+</div>
+{% endblock %}
