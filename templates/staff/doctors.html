@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>👨‍⚕️ Doctors</h3>
+
+<!-- DROPDOWN -->
+<div class="mb-3">
+    <label>Select Doctor</label>
+
+    <select id="doctorSelect" class="form-select">
+        <option value="">-- Select Doctor --</option>
+
+        {% for d in doctors %}
+            <option value="{{ d.id }}">
+                Dr. {{ d.name }} ({{ d.specialization }})
+            </option>
+        {% endfor %}
+    </select>
+</div>
+
+<!-- BUTTONS -->
+<button onclick="goToSlots()" class="btn btn-primary w-100 mb-2">
+    View Slots
+</button>
+
+<button onclick="goToBooking()" class="btn btn-success w-100">
+    Add Booking
+</button>
+
+<!-- SCRIPT -->
+<script>
+function goToSlots() {
+    var id = document.getElementById("doctorSelect").value;
+
+    if (id == "") {
+        alert("Doctor select cheyyi");
+        return;
+    }
+
+    window.location.href = "/dashboard/staff/doctor/" + id + "/slots/";
+}
+
+function goToBooking() {
+    var id = document.getElementById("doctorSelect").value;
+
+    if (id == "") {
+        alert("Doctor select cheyyi");
+        return;
+    }
+
+    window.location.href = "/dashboard/staff/doctor/" + id + "/slots/?book=1";
+}
+</script>
+
+{% endblock %}
