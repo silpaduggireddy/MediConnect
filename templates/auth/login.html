@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-4">
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+
+                <h4 class="text-center mb-4">Login</h4>
+
+                <form method="post" onsubmit="checkUser(event)">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <input
+                            type="text"
+                            name="phone"
+                            class="form-control"
+                            placeholder="Enter phone number"
+                        >
+                    </div>
+                    <p id="error-msg" style="color:red;"></p>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Send OTP
+                    </button>
+
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        let cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++){
+            let cookie = cookies[i].trim();
+            if (cookie.substring(0,name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+
+            }
+        }
+    }
+    return cookieValue;
+}
+function checkUser(event) {
+    event.preventDefault();
+
+    let phone = document.querySelector("input[name='phone']").value;
+
+    fetch("/dashboard/staff/check-user/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie('csrftoken')
+        },
+        body: JSON.stringify({ mobile: phone })
+    })
+    .then(res => res.json())
+    .then(data => {
+    if (data.status === "new") {
+        document.getElementById("error-msg").innerText =
+            "Mobile number not registered";
+        return;
+    }
+
+    // ✅ Existing user → OTP send
+    event.target.submit();
+});
+}
+</script>
+{% endblock %}
+
