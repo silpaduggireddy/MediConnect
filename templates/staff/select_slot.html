@@ -19,7 +19,6 @@
                     type="date"
                     id="datePicker"
                     class="form-control"
-                    min="{{ today }}"
                     max="{{ max_date }}"
                     required
                 >
@@ -132,17 +131,18 @@ slotDropdown.disabled = true;
 datePicker.addEventListener("change", function () {
     const selectedDate = this.value;
     const today = new Date();
-        const maxDate = new Date();
-        maxDate.setDate(today.getDate() + 3);
-
-        const selected = new Date(selectedDate);
-        // past date block //
-        if (selected < today.setHours(0,0,0,0))
+    today.setHours(0,0,0,0,0);
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + 3);
+    const selected = new Date(selectedDate);
+        // today date block //
+        if (selected <=  today) 
     {
-            alert("past dates not allowed");
+            alert(" Today & past dates  are not allowed ");
             datePicker.value = "";
             return;
     }
+
         // 3 days tarvata block //
         if (selected > maxDate) {
             alert("Only next 3 days allowed");
@@ -161,8 +161,8 @@ datePicker.addEventListener("change", function () {
 
     // ❌ Block weekends
     const day = new Date(selectedDate).getDay();
-    if (day === 0 || day === 6) {
-        alert("Appointments are not available on weekends");
+    if (day === 0 ) {
+        alert("Appointments are not available on Sunday");
         datePicker.value = "";
         slotDropdown.innerHTML = '<option>Select a weekday</option>';
         return;

@@ -58,10 +58,11 @@ def doctor_slots(request, doctor_id):
 
     doctor = get_object_or_404(Doctor, id=doctor_id)
     today = timezone.now().date()
+    tomorrow = today + timedelta(days=1)
     max_date = today + timedelta(days=3)
     return render(request, "staff/select_slot.html", {
         "doctor": doctor,
-        "today": today,
+        "min_date": tomorrow,
         "max_date" : max_date
     })
 
@@ -181,18 +182,25 @@ def book_clinic_appointment(request, doctor_id):
     whatsapp_number = data.get("whatsapp_number")
 
     slot = get_object_or_404(TimeSlot, id=slot_id, is_available=True)
-    today = timezone.now().date()
+    today = timezone.localdate()
+    min_date = today + timedelta(days=1)
     max_date = today + timedelta(days=3)
 
-    # 🔥 DATE VALIDATION
-    if slot.date < today:
-         return JsonResponse({"message": "Past dates not allowed"}, status=400)
+    
 
+    # 🔥 DATE VALIDATION
+    if slot.date <= today:
+         return JsonResponse({"message": "Today booking  not allowed"}, status=400)
+    if slot.date.weekday() == 6:
+         return JsonResponse({"message": "Sunday appointmentsnot allowed"},status=400)
     if slot.date > max_date:
           return JsonResponse({"message": "Only next 3 days allowed"}, status=400)
-
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    phone = whatsapp_number
+    user, created = User.objects.get_or_create(username=phone)
     Appointment.objects.create(
-        user=None,  # walk-in
+        user=user,  # IMPORTANT
         doctor=slot.doctor,
         slot=slot,
         consultation_type="CLINIC",
@@ -329,14 +337,37 @@ def book_appointment_staff(request, slot_id):
         id=slot_id,
         is_available=True
     )
-
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    phone = request.POST.get("whatsapp_number")
+    user, created = User.objects.get_or_create(username=phone)
     Appointment.objects.create(
+        user=user,
         doctor=slot.doctor,
         slot=slot,
         booked_by_staff=request.user,   # ✅ STAFF BOOKING
+        whatsapp_number=phone
     )
 
     slot.is_available = False
     slot.save()
 
     return redirect("staff_dashboard")
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import get_user_model
+
+@csrf_exempt
+def check_user(request):
+    data = json.loads(request.body)
+    mobile = data.get("mobile")
+
+    User = get_user_model()
+
+    # 🔥 RENDU CHECK
+    user_exists = User.objects.filter(username=mobile).exists()
+    appointment_exists = Appointment.objects.filter(whatsapp_number=mobile).exists()
+
+    if user_exists or appointment_exists:
+        return JsonResponse({"status": "exists"})
+    else:
+        return JsonResponse({"status": "new"})
