@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Select Slot{% endblock %}
+
+{% block content %}
+<h3 class="mb-4">Book Appointment with {{ doctor.name }}</h3>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <form id="bookingForm">
+            {% csrf_token %}
+
+            <!-- Consultation Type -->
+            <input
+                type="hidden"
+                id="consultationType"
+                value="{{ request.GET.type|default:'ONLINE' }}"
+            >
+
+            <!-- DATE SELECT -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Select Date <span style="color:red;">*</span>
+                </label>
+                <input
+                    type="date"
+                    id="datePicker"
+                    class="form-control"
+                    min="{{ today|date:'Y-m-d' }}"
+                    max="{{ today|add:'2 days'|date:'Y-m-d' }}"
+                    required
+                >
+            </div>
+
+            <!-- PATIENT NAME -->
+            <div class="mb-3">
+                <label class="form-control fw-bold">Patient Name <span class="text-danger">*</span>
+                </label>
+                <input type="text"
+                       id="patient_name"
+                       class="form-control"
+                       required>
+            </div>
+
+            <!-- AGE -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Age</label>
+                <input type="number"
+                       id="age"
+                       class="form-control"
+                       min="1"
+                       max="99"
+                       required>
+            </div>
+
+            <!-- GENDER -->
+            <!--<div class="mb-3">
+                <label class="form-label fw-bold">Gender</label>
+                <select id="gender" class="form-select" required>
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>-->
+
+            <!-- HEALTH HISTORY -->
+            <!--<div class="mb-3">
+                <label class="form-label fw-bold">Health History</label>
+                <textarea id="health_history"
+                          class="form-control"
+                          rows="2"></textarea>
+            </div>-->
+
+            <!-- CURRENT PROBLEM -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Current Health Problem</label>
+                <textarea id="current_problem"
+                          class="form-control"
+                          rows="2"
+                          required></textarea>
+            </div>
+
+            <!-- WHATSAPP -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Whatsapp Number <span class="text-danger">*</span>
+                </label>
+                <input type="tel"
+                       id="Whatsapp"
+                       class="form-control"
+                       maxlength="10"
+                       required>
+            </div>
+
+            <!-- SLOT DROPDOWN -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Available Slots <span style="color:red;">*</span>
+                </label>
+                <select id="slotDropdown"
+                        class="form-select"
+                        required
+                        disabled>
+                    <option>Select a date first</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100">
+                Book Appointment
+            </button>
+        </form>
+
+    </div>
+</div>
+
+<script>
+const datePicker = document.getElementById("datePicker");
+const slotDropdown = document.getElementById("slotDropdown");
+const form = document.getElementById("bookingForm");
+
+const slotsUrl = "{% url 'appointments:slots_by_date' doctor.id %}";
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+/* 🚫 STRICT DATE VALIDATION + FETCH */
+datePicker.addEventListener("change", function () {
+
+    const selectedDate = new Date(this.value + "T00:00:00"); // Ensure time is set to start of day
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const maxDate = new Date(today);
+    maxDate.setDate(today.getDate() + 3);
+
+    // ❌ Past
+    if (selectedDate < today) {
+        alert("Cannot select past dates");
+        this.value = "";
+        slotDropdown.innerHTML = '<option>Select valid date</option>';
+        slotDropdown.disabled = true;
+        return;
+    }
+
+    // ❌ Beyond 3 days
+    if (selectedDate > maxDate) {
+        alert("Only next 3 days allowed");
+        this.value = "";
+        slotDropdown.innerHTML = '<option>Select valid date</option>';
+        slotDropdown.disabled = true;
+        return;
+    }
+
+    // ❌ Weekend
+    const day = selectedDate.getDay();
+    if (day === 0 || day === 6) {
+        alert("No appointments on weekends");
+        this.value = "";
+        slotDropdown.innerHTML = '<option>Select weekday</option>';
+        slotDropdown.disabled = true;
+        return;
+    }
+
+    /* FETCH SLOTS */
+    slotDropdown.innerHTML = '<option>Loading...</option>';
+    slotDropdown.disabled = true;
+
+    fetch(`${slotsUrl}?date=${this.value}`)
+        .then(res => res.json())
+        .then(data => {
+            slotDropdown.innerHTML = "";
+
+            if (!data.slots || data.slots.length === 0) {
+                slotDropdown.innerHTML =
+                    '<option>No slots available</option>';
+            } else {
+                slotDropdown.innerHTML =
+                    '<option>Select a slot</option>';
+
+                data.slots.forEach(slot => {
+                    const option = document.createElement("option");
+                    option.value = slot.id;
+                    option.textContent = slot.label;
+                    slotDropdown.appendChild(option);
+                });
+            }
+
+            slotDropdown.disabled = false;
+        })
+        .catch(() => {
+            slotDropdown.innerHTML =
+                '<option>Error loading slots</option>';
+        });
+});
+
+/* BOOK */
+form.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const slotId = slotDropdown.value;
+    const consultationType =
+        document.getElementById("consultationType").value || "ONLINE";
+
+    if (!slotId) {
+        alert("Please select a slot");
+        return;
+    }
+
+    fetch("{% url 'appointments:book_appointment' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+        },
+        body: JSON.stringify({
+            slot_id: slotId,
+            consultation_type: consultationType,
+            patient_name: document.getElementById("patient_name").value,
+            age: document.getElementById("age").value,
+           // gender: document.getElementById("gender").value,
+           //health_history: document.getElementById("health_history").value,
+            current_health_problem: document.getElementById("current_problem").value,
+            whatsapp_number: document.getElementById("Whatsapp").value,
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.status === "PAYMENT_REQUIRED") {
+            window.location.href = `/payment/${data.appointment_id}/`;
+            return;
+        }
+
+        alert(data.message);
+        window.location.href = "{% url 'appointments:appointment_history' %}";
+    })
+    .catch(() => {
+        alert("Something went wrong. Please try again.");
+    });
+});
+</script>
+
+{% endblock %}
