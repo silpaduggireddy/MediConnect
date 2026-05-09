@@ -58,7 +58,7 @@ function checkUser(event) {
 
     let phone = document.querySelector("input[name='phone']").value;
 
-    fetch("/dashboard/staff/check-user/", {
+    fetch("/dashboard/staff/login-check-user/", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -68,17 +68,18 @@ function checkUser(event) {
     })
     .then(res => res.json())
     .then(data => {
-    if (data.status === "new") {
-        document.getElementById("error-msg").innerText =
-            "Mobile number not registered";
-        return;
-    }
 
-    // ✅ Existing user → OTP send
-    event.target.submit();
-});
+        // ❌ USER EXISTS → LOGIN FLOW (OTP SEND)
+        if (data.status === "exists") {
+            event.target.submit();   // OTP send
+            return;
+        }
+
+        // ❌ NEW USER → BLOCK LOGIN
+        document.getElementById("error-msg").innerText =
+            "Number not registered. Please register first.";
+
+    });
 }
 </script>
 {% endblock %}
-
-

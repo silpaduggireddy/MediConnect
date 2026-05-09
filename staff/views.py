@@ -205,11 +205,8 @@ def book_clinic_appointment(request, doctor_id):
          return JsonResponse({"message": "Sunday appointmentsnot allowed"},status=400)
     if slot.date > max_date:
           return JsonResponse({"message": "Only next 3 days allowed"}, status=400)
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-    phone = whatsapp_number
-    user, created = User.objects.get_or_create(username=phone)
-
+    
+    user = request.user
     Appointment.objects.create(
         user=user,  # Important
         doctor=slot.doctor,
@@ -227,7 +224,7 @@ def book_clinic_appointment(request, doctor_id):
         whatsapp_number=whatsapp_number,
     )
 
-    slot.is_available = patient_name=name,
+    slot.is_available = False
 
     slot.save()
 
@@ -348,10 +345,10 @@ def book_appointment_staff(request, slot_id):
         id=slot_id,
         is_available=True
     )
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
+    
+    user = request.user
     phone = request.POST.get("whatsapp_number")
-    user, created = User.objects.get_or_create(username=phone)
+    
     Appointment.objects.create(
         user=user,
         doctor=slot.doctor,
@@ -374,11 +371,23 @@ def check_user(request):
 
     User = get_user_model()
 
-    # 🔥 RENDU CHECK
-    user_exists = User.objects.filter(username=mobile).exists()
-    appointment_exists = Appointment.objects.filter(whatsapp_number=mobile).exists()
+    exists = (
+        User.objects.filter(username=mobile).exists()
+        or Appointment.objects.filter(whatsapp_number=mobile).exists()
+    )
 
-    if user_exists or appointment_exists:
-        return JsonResponse({"status": "exists"})
+    if exists:
+        return JsonResponse({"status": "exists"})  # block register
+
+    return JsonResponse({"status": "new"})  # allow register
+@csrf_exempt
+def login_check_user(request):
+    data = json.loads(request.body)
+    mobile = data.get("mobile")
+
+    User = get_user_model()
+
+    if User.objects.filter(username=mobile).exists():
+        return JsonResponse({"status": "exists"})  # OTP allow
     else:
-        return JsonResponse({"status": "new"})
+        return JsonResponse({"status": "not_registered"})  # block OTP

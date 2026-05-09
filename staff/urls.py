@@ -11,6 +11,7 @@ from .views import (
     slots_by_date,   # 🔥 ADD THIS
     download_appointments,
     check_user,
+    login_check_user,
 )
 
 app_name = "staff"
@@ -39,6 +40,7 @@ urlpatterns = [
         name="staff_doctor_slots"
     ),
     path('check-user/',check_user),
+    path("login-check-user/", login_check_user),
 
 
     # 🔥 AJAX – slots by date
