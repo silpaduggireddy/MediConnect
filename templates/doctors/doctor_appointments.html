@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Appointments{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>📅 Appointments</h3>
+        <a href="{% url 'doctors:doctor_dashboard' %}"
+           class="btn btn-outline-secondary btn-sm">
+            ← Back to Dashboard
+        </a>
+    </div>
+
+    <!-- DATE FILTER -->
+    <form method="get" class="mb-3">
+        <label class="fw-bold">Select Date</label>
+        <input type="date"
+               name="date"
+               value="{{ selected_date|default:today|date:'Y-m-d' }}"
+               class="form-control w-25"
+               onchange="this.form.submit()">
+    </form>
+
+    {% if doctor %}
+        <div class="alert alert-info">
+            <strong>Dr. {{ doctor.name }}</strong> |
+            {{ selected_date|default:today|date:"d M Y" }}
+        </div>
+    {% endif %}
+
+    <!-- TABLE -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Patient</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Reports</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            {% for a in appointments %}
+                <tr>
+                    <!-- PATIENT -->
+                    <td>
+                        {% if a.user %}
+                            {{ a.user.username }}
+                            <span class="badge bg-primary">Online</span>
+                        {% elif a.booked_by_staff %}
+                            Walk-in
+                            <span class="badge bg-secondary">Staff</span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+
+                    <!-- TIME -->
+                    <td>
+                        {{ a.slot.start_time|time:"h:i A" }} –
+                        {{ a.slot.end_time|time:"h:i A" }}
+                    </td>
+
+                    <!-- STATUS -->
+                    <td>
+                        <span class="badge
+                            {% if a.status == 'COMPLETED' %}
+                                bg-success
+                            {% elif a.status == 'CANCELLED' %}
+                                bg-danger
+                            {% else %}
+                                bg-warning text-dark
+                            {% endif %}
+                        ">
+                            {{ a.status }}
+                        </span>
+                    </td>
+
+                    <!-- REPORTS -->
+                    <td>
+                        {% if a.reports.exists %}
+                            <a href="{% url 'doctors:doctor_view_reports' a.id %}"
+                               class="btn btn-sm btn-outline-primary">
+                                View Reports ({{ a.reports.count }})
+                            </a>
+                        {% else %}
+                            <span class="text-muted">No reports</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- ACTION -->
+                    <td>
+                        {% if a.status == "BOOKED" %}
+                            <form method="post"
+                                  action="{% url 'doctors:doctor_mark_completed' a.id %}"
+                                  class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="btn btn-sm btn-success">
+                                    Mark Completed
+                                </button>
+                            </form>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">
+                        No appointments for selected date
+                    </td>
+                </tr>
+            {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

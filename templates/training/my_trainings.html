@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}My Trainings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold mb-0">📘 My Trainings</h3>
+        <a href="{% url 'training:training_list' %}"
+           class="btn btn-outline-secondary btn-sm">
+            Browse Trainings
+        </a>
+    </div>
+
+    {% if enrollments %}
+
+    <div class="row g-4">
+        {% for e in enrollments %}
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+
+                    <h5 class="fw-semibold">
+                        {{ e.course.name }}
+                    </h5>
+
+                    <p class="mb-1">
+                        <strong>Trainer:</strong>
+                        {{ e.course.trainer_name }}
+                    </p>
+
+                    <p class="mb-1">
+                        <strong>Start:</strong>
+                        {{ e.course.start_datetime|date:"d M Y, h:i A" }}
+                    </p>
+
+                    <p class="mb-3">
+                        <strong>End:</strong>
+                        {{ e.course.end_datetime|date:"d M Y, h:i A" }}
+                    </p>
+
+                    <!-- STATUS -->
+                    {% if e.course.status == "UPCOMING" %}
+                        <span class="badge bg-primary">Upcoming</span>
+                    {% elif e.course.status == "ONGOING" %}
+                        <span class="badge bg-success">Ongoing</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Completed</span>
+                    {% endif %}
+
+                    <div class="mt-auto pt-3 text-muted small">
+                        Enrolled on {{ e.enrolled_at|date:"d M Y" }}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="alert alert-info text-center">
+        You have not enrolled in any training yet.
+        <br>
+        <a href="{% url 'training:training_list' %}">
+            Explore available trainings
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+

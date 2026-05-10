@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Appointment Reports{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <h4 class="mb-3">
+        📄 Reports – Appointment #{{ appointment.id }}
+    </h4>
+
+    <a href="{% url 'doctors:doctor_appointments' %}"
+       class="btn btn-sm btn-outline-secondary mb-3">
+        ← Back to Appointments
+    </a>
+
+    {% if reports %}
+        <ul class="list-group">
+            {% for r in reports %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>
+                        Uploaded on {{ r.uploaded_at|date:"d M Y H:i" }}
+                    </span>
+                    <a href="{{ r.file.url }}"
+                       target="_blank"
+                       class="btn btn-sm btn-success">
+                        Open Report
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-muted">No reports available.</p>
+    {% endif %}
+
+</div>
+{% endblock %}
+

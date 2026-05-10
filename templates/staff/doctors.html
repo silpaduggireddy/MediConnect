@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3 class="mb-4">👨‍⚕️ Doctors</h3>
+
+<div class="mb-3">
+    <label class="form-label fw-bold">Select Doctor</label>
+
+    <select class="form-select" id="doctorSelect">
+        <option value="">-- Select Doctor --</option>
+
+        {% for d in doctors %}
+            <option value="{{ d.id }}">
+                Dr. {{ d.name }} - {{ d.specialization }}
+            </option>
+        {% endfor %}
+    </select>
+</div>
+
+<!-- ACTION BUTTONS -->
+<div class="d-flex gap-2">
+
+    <!-- Add Booking -->
+    <button class="btn btn-success w-50"
+            onclick="addBooking()">
+        Add Booking
+    </button>
+
+</div>
+
+<script>
+function getDoctorId() {
+    const doctorId = document.getElementById("doctorSelect").value;
+
+    if (!doctorId) {
+        alert("Please select a doctor");
+        return null;
+    }
+    return doctorId;
+}
+
+function goToSlots() {
+    const doctorId = getDoctorId();
+    if (!doctorId) return;
+
+    let baseUrl = "{% url 'staff:staff_doctor_slots' 0 %}";
+    let finalUrl = baseUrl.replace("0", doctorId);
+
+    window.location.href = finalUrl;
+}
+
+function addBooking() {
+    const doctorId = getDoctorId();
+    if (!doctorId) return;
+
+    let baseUrl = "{% url 'staff:staff_doctor_slots' 0 %}";
+    let finalUrl = baseUrl.replace("0", doctorId);
+
+    window.location.href = finalUrl + "?book=1";
+}
+</script>
+
+{% endblock %}
