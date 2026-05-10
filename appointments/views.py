@@ -158,7 +158,7 @@ def book_appointment(request):
                 "status": "CONFIRMED",
                 "appointment_id": appointment.id,
                 "message":  (
-                    f"✅ Appointment Booked Successfully\n\n"
+                    f"✅ Appointment Booked Successfully.\n\n"
                     f"👨‍⚕️ Doctor: Dr. {doctor.name}\n"
                     f"🩺 Specialization: {doctor.specialization}\n"
                     f"🧑 Patient: {appointment.patient_name}\n"
