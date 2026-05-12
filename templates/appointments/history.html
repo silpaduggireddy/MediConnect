@@ -10,7 +10,7 @@
     <thead class="table-dark">
         <tr>
             <th>Doctor</th>
-            <th>Specialization</th>
+            <th>Patient Name</th>
             <th>Date</th> <!-- ✅ Added -->
             <th>Time</th>
             <th>Status</th>
@@ -24,7 +24,7 @@
         {% for appt in appointments %}
         <tr>
             <td>{{ appt.doctor.name }}</td>
-            <td>{{ appt.doctor.specialization }}</td>
+            <td>{{ appt.patient_name }}</td>
 
             <!-- ✅ Date -->
             <td>{{ appt.slot.date }}</td>

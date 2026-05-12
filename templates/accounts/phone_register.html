@@ -15,7 +15,7 @@
                 </p>
                 {% endif %}
 
-                <form method="post">
+                <form method="post" onsubmit="checkUser(event)">
                     {% csrf_token %}
 
                     <div class="mb-3">
@@ -56,5 +56,56 @@
 
     </div>
 </div>
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+
+    if (document.cookie && document.cookie !== '') {
+        let cookies = document.cookie.split(';');
+
+        for (let i = 0; i < cookies.length; i++) {
+            let cookie = cookies[i].trim();
+
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(
+                    cookie.substring(name.length + 1)
+                );
+                break;
+            }
+        }
+    }
+
+    return cookieValue;
+}
+
+function checkUser(event) {
+    event.preventDefault();
+
+    let phone = document.querySelector("input[name='phone']").value;
+
+    fetch("/dashboard/staff/check-user/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie('csrftoken')
+        },
+        body: JSON.stringify({ mobile: phone })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        // ❌ Number already used
+        if (data.status === "exists") {
+
+            alert("The number already exists");
+
+            return;
+        }
+
+        // ✅ New number
+        event.target.submit();
+    });
+}
+</script>
 {% endblock %}
 
