@@ -18,6 +18,8 @@ def phone_register(request):
                "message": "The number already exists"
             })
 
+        otp_value = str(random.randint(100000, 999999))
+
         request.session["username"] = username
         request.session["otp"] = otp_value
 
@@ -29,8 +31,7 @@ def phone_register(request):
                 "error": "Phone number is required"
             })
 
-        otp_value = str(random.randint(100000, 999999))
-
+        
         # invalidate old OTPs
         OTP.objects.filter(phone_number=phone, is_verified=False).delete()
 
