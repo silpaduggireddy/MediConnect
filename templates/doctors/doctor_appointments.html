@@ -25,11 +25,22 @@
     </form>
 
     {% if doctor %}
-        <div class="alert alert-info">
+    <div class="alert alert-info">
+
+        {% if doctor.id == 2 %}
+            <strong>Dr. Bhupatindra Narain Jha</strong> |
+
+        {% elif doctor.id == 4 %}
+            <strong>Dr.(Mrs.) Madan Munchun Jha</strong> |
+
+        {% else %}
             <strong>Dr. {{ doctor.name }}</strong> |
-            {{ selected_date|default:today|date:"d M Y" }}
-        </div>
-    {% endif %}
+        {% endif %}
+
+        {{ selected_date|default:today|date:"d M Y" }}
+
+    </div>
+{% endif %}
 
     <!-- TABLE -->
     <div class="table-responsive">

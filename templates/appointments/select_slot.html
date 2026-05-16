@@ -160,8 +160,10 @@ datePicker.addEventListener("change", function () {
     /* FETCH SLOTS */
     slotDropdown.innerHTML = '<option>Loading...</option>';
     slotDropdown.disabled = true;
+    const consultationType =
+    document.getElementById("consultationType").value || "ONLINE";
 
-    fetch(`${slotsUrl}?date=${this.value}`)
+    fetch(`${slotsUrl}?date=${this.value}&type=${consultationType}`)
         .then(res => res.json())
         .then(data => {
             slotDropdown.innerHTML = "";

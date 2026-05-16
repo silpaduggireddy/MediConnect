@@ -19,6 +19,10 @@ def phone_register(request):
             })
 
         request.session["username"] = username
+        request.session["otp"] = otp_value
+
+
+
 
         if not phone:
             return render(request, "accounts/phone_register.html", {
@@ -99,6 +103,9 @@ def login_view(request):
         )
 
         request.session["phone"] = phone
+        request.session["otp"] = otp_value
+
+
 
         print(f"LOGIN OTP for {phone}: {otp_value}")
 

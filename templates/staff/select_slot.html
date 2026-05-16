@@ -85,7 +85,7 @@ datePicker.addEventListener("change", function () {
         return;
     }
 
-    fetch(`${slotsUrl}?date=${selectedDate}`)
+    fetch(`${slotsUrl}?date=${selectedDate}&type=CLINIC`)
         .then(res => res.json())
         .then(data => {
             slotDropdown.innerHTML = "";

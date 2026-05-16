@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from doctors.models import Doctor
 from appointments.models import Appointment, TimeSlot
+from appointments.views import (generate_default_slots,generate_clinic_slots)
 
 from io import BytesIO
 from django.http import FileResponse
@@ -108,8 +109,8 @@ def download_appointments(request, doctor_id):
 
     # ✅ Table header
     data = [[
-        "S.No.", "Patient Name", "Age", "Gender",
-        "Health History", "Current Problem",
+        "S.No.", "Patient Name", "Age", 
+         "Current Problem",
         "Whatsapp", "Slot", "Booked On", "Status", "Payment"
     ]]
 
@@ -124,8 +125,6 @@ def download_appointments(request, doctor_id):
             str(idx),
             str(appt.patient_name or "-"),
             str(appt.age or "-"),
-            str(appt.gender or "-"),
-            str(appt.health_history or "-"),
             str(appt.current_health_problem or "-"),
             str(appt.whatsapp_number or "-"),
             slot_text,
@@ -188,8 +187,8 @@ def book_clinic_appointment(request, doctor_id):
     slot_id = data.get("slot_id")
     name = data.get("name")
     age = data.get("age")
-    gender = data.get("gender")
-    health_history = data.get("health_history")
+    # gender = data.get("gender")
+    # health_history = data.get("health_history")
     current_problem = data.get("current_problem")
     whatsapp_number = data.get("whatsapp_number")
 
@@ -218,8 +217,8 @@ def book_clinic_appointment(request, doctor_id):
         status="BOOKED",
         patient_name=name,
         age=age,
-        gender=gender,
-        health_history=health_history,
+        # gender=gender,
+        # health_history=health_history,
         current_health_problem=current_problem,
         whatsapp_number=whatsapp_number,
     )
@@ -301,16 +300,63 @@ def update_appointment_status(request, id):
 # AJAX
 # -------------------------
 def slots_by_date(request, doctor_id):
+
     date_str = request.GET.get("date")
+
     if not date_str:
         return JsonResponse({"slots": []})
 
     selected_date = datetime.fromisoformat(date_str).date()
-    doctor = get_object_or_404(Doctor, id=doctor_id)
-    from appointments.views import generate_default_slots
 
-    if not TimeSlot.objects.filter(doctor=doctor,date=selected_date).exists():
-        generate_default_slots(doctor,selected_date)
+    doctor = get_object_or_404(Doctor, id=doctor_id)
+
+    appointment_type = request.GET.get("type", "ONLINE")
+
+    # 🔥 delete ALL slots for that date
+    TimeSlot.objects.filter(
+        doctor=doctor,
+        date=selected_date
+    ).delete()
+
+    # ✅ CLINIC = 15 mins
+    if appointment_type == "CLINIC":
+
+        start_time = datetime.combine(selected_date, datetime.strptime("07:30", "%H:%M").time())
+        end_time = datetime.combine(selected_date, datetime.strptime("13:00", "%H:%M").time())
+
+        while start_time < end_time:
+
+            slot_end = start_time + timedelta(minutes=15)
+
+            TimeSlot.objects.create(
+                doctor=doctor,
+                date=selected_date,
+                start_time=start_time.time(),
+                end_time=slot_end.time(),
+                is_available=True
+            )
+
+            start_time = slot_end
+
+    # ✅ ONLINE = 30 mins
+    else:
+
+        start_time = datetime.combine(selected_date, datetime.strptime("10:00", "%H:%M").time())
+        end_time = datetime.combine(selected_date, datetime.strptime("17:00", "%H:%M").time())
+
+        while start_time < end_time:
+
+            slot_end = start_time + timedelta(minutes=30)
+
+            TimeSlot.objects.create(
+                doctor=doctor,
+                date=selected_date,
+                start_time=start_time.time(),
+                end_time=slot_end.time(),
+                is_available=True
+            )
+
+            start_time = slot_end
 
     slots = TimeSlot.objects.filter(
         doctor=doctor,
@@ -323,7 +369,8 @@ def slots_by_date(request, doctor_id):
             {
                 "id": s.id,
                 "label": f"{s.start_time.strftime('%I:%M %p')} - {s.end_time.strftime('%I:%M %p')}"
-            } for s in slots
+            }
+            for s in slots
         ]
     })
 
