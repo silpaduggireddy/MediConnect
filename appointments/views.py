@@ -264,7 +264,7 @@ def select_slot(request, doctor_id):
 @login_required
 def appointment_history(request):
     appointments = Appointment.objects.filter(
-        whatsapp_number=request.user.username
+        user=request.user
     ).select_related("doctor", "slot").order_by("-slot__date", "slot__start_time")
 
     return render(

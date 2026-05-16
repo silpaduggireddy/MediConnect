@@ -13,10 +13,20 @@
         <option value="">-- Select Doctor --</option>
 
         {% for doctor in doctors %}
-            <option value="{{ doctor.id }}">
-                {{ doctor.name }} - {{ doctor.specialization }} 
-            </option>
-        {% endfor %}
+    <option value="{{ doctor.id }}">
+
+        {% if doctor.id == 2 %}
+            Dr. Bhupatindra Narain Jha - {{ doctor.specialization }}
+
+        {% elif doctor.id == 4 %}
+            Dr.(Mrs.) Madan Munchun Jha - {{ doctor.specialization }}
+
+        {% else %}
+            {{ doctor.name }} - {{ doctor.specialization }}
+        {% endif %}
+
+    </option>
+{% endfor %}
     </select>
 </div>
 

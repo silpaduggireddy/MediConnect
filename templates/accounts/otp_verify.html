@@ -50,4 +50,11 @@
 
     </div>
 </div>
+<script>
+    var otp = "{{ request.session.otp }}";
+
+    if (otp && otp !== "None") {
+        alert("Your OTP is: " + otp);
+    }
+</script>
 {% endblock %}

@@ -109,8 +109,8 @@ def download_appointments(request, doctor_id):
 
     # ✅ Table header
     data = [[
-        "S.No.", "Patient Name", "Age", "Gender",
-        "Health History", "Current Problem",
+        "S.No.", "Patient Name", "Age", 
+         "Current Problem",
         "Whatsapp", "Slot", "Booked On", "Status", "Payment"
     ]]
 
@@ -125,8 +125,6 @@ def download_appointments(request, doctor_id):
             str(idx),
             str(appt.patient_name or "-"),
             str(appt.age or "-"),
-            str(appt.gender or "-"),
-            str(appt.health_history or "-"),
             str(appt.current_health_problem or "-"),
             str(appt.whatsapp_number or "-"),
             slot_text,
@@ -189,8 +187,8 @@ def book_clinic_appointment(request, doctor_id):
     slot_id = data.get("slot_id")
     name = data.get("name")
     age = data.get("age")
-    gender = data.get("gender")
-    health_history = data.get("health_history")
+    # gender = data.get("gender")
+    # health_history = data.get("health_history")
     current_problem = data.get("current_problem")
     whatsapp_number = data.get("whatsapp_number")
 
@@ -219,8 +217,8 @@ def book_clinic_appointment(request, doctor_id):
         status="BOOKED",
         patient_name=name,
         age=age,
-        gender=gender,
-        health_history=health_history,
+        # gender=gender,
+        # health_history=health_history,
         current_health_problem=current_problem,
         whatsapp_number=whatsapp_number,
     )
