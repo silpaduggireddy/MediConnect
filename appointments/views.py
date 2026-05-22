@@ -121,22 +121,10 @@ def available_slots_by_date(request, doctor_id):
     # ✅ CLINIC = 15 mins
     if appointment_type == "CLINIC":
 
-        TimeSlot.objects.filter(
-            doctor=doctor,
-            date=selected_date,
-            is_available=True
-        ).delete()
-
         generate_clinic_slots(doctor, selected_date)
 
     # ✅ ONLINE = 30 mins
     else:
-        # Delete old slots
-        TimeSlot.objects.filter(
-            doctor=doctor,
-            date=selected_date,
-            is_available=True
-        ).delete()
 
         # Generate ONLINE slots
         generate_default_slots(doctor, selected_date)
@@ -164,72 +152,69 @@ def available_slots_by_date(request, doctor_id):
 @api_view(["POST"])
 @login_required
 def book_appointment(request):
-    slot_id = request.data.get("slot_id")
-    if slot_id == "No slots available":
-         return Response(
-             {"error": "No slots available"},
-             status=400
-    )
-
-    try:
-        slot_id = int(slot_id)
-    except:
-        return Response(
-        {"error": "Invalid slot id"},
-        status=400
+    slot_ids = request.data.get("slot_ids")
+    if not slot_ids:
+       return Response(
+          {"error": "No slots selected"},
+          status=400
     )
     consultation_type = request.data.get("consultation_type", "ONLINE")
     patient_name = request.data.get("patient_name")
     age = request.data.get("age")
    # gender = request.data.get("gender")
     # health_history= request.data.get("health_history")
-    current_health_problem = request.data.get("current_health_problem")
-    whatsapp_number = request.data.get("whatsapp_number")
+    comments = request.data.get("comments")
+    contact_number = request.data.get("contact_number")
 
+
+    appointments = []
 
     with transaction.atomic():
-        slot = get_object_or_404(
+
+      for slot_id in slot_ids:
+
+          slot = get_object_or_404(
             TimeSlot.objects.select_for_update(),
             id=slot_id,
             is_available=True
-        )
+          )
 
-        doctor = slot.doctor
-        amount = doctor.consultation_fee or 0
+          doctor = slot.doctor
+          amount = doctor.consultation_fee or 0
 
-        appointment = Appointment.objects.create(
+          appointment = Appointment.objects.create(
             user=request.user,
             doctor=doctor,
             slot=slot,
             consultation_type=consultation_type,
             patient_name=patient_name,
             age=age,
-           # gender=gender,
-            # health_history=health_history,
-            current_health_problem=current_health_problem,
-            whatsapp_number=whatsapp_number,
+            comments=comments,
+            contact_number=contact_number,
             amount=amount,
             payment_status="PENDING",
             status="BOOKED",
             payment_mode="ONLINE" if consultation_type == "ONLINE" else "OFFLINE"
         )
 
-        slot.is_available = False
-        slot.save()
+          appointments.append(appointment)
+
+          slot.is_available = False
+          slot.save()
     # 🏥 CLINIC → CONFIRM ONLY
     if consultation_type == "CLINIC":
              print("test me")
              print(slot.doctor)
              return Response({
                 "status": "CONFIRMED",
-                "appointment_id": appointment.id,
+                "appointment_id": appointments[0].id,
                 "message":  (
                     f"✅ Appointment Booked Successfully\n\n"
                     f"👨‍⚕️ Doctor: Dr. {doctor.name}\n"
                     f"🩺 Specialization: {doctor.specialization}\n"
-                    f"🧑 Patient: {appointment.patient_name}\n"
-                    f"📅 Date: {appointment.slot.date}\n"
-                    f"⏰ Time: {appointment.slot.start_time}\n"
+                    f"🧑 Patient: {appointments[0].patient_name}\n"
+                    f"📅 Date: {appointments[0].slot.date}\n"
+                    f"⏰ Time: {appointments[0].slot.start_time}\n"
                     f"💰 Pay Rs. {amount} at clinic."
         )
                     

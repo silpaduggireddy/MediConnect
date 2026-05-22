@@ -46,6 +46,17 @@ class TimeSlot(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
     is_available = models.BooleanField(default=True)
+    slot_type = models.CharField(
+        max_length=10,
+        default="ONLINE"
+    )
+    class Meta:
+        unique_together = (
+            "doctor",
+            "date",
+            "start_time",
+            "end_time"
+    )
 
     def clean(self):
         # start < end
@@ -86,8 +97,8 @@ class Appointment(models.Model):
     age = models.PositiveIntegerField(null=True, blank=True)
    # gender = models.CharField(max_length=10,null=True, blank=True)
     # health_history = models.TextField(null=True, blank=True)
-    current_health_problem = models.TextField(null=True, blank=True)
-    whatsapp_number = models.CharField(max_length=10, null=True,blank=True)
+    comments = models.TextField(null=True, blank=True)
+    contact_number = models.CharField(max_length=10, null=True,blank=True)
 
     consultation_type = models.CharField(
         max_length=10,

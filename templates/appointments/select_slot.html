@@ -71,36 +71,42 @@
                           rows="2"></textarea>
             </div>-->
 
-            <!-- CURRENT PROBLEM -->
+            <!-- COMMENTS -->
             <div class="mb-3">
-                <label class="form-label fw-bold">Current Health Problem</label>
-                <textarea id="current_problem"
+                <label class="form-label fw-bold">Comments</label>
+                <textarea id="comments"
                           class="form-control"
                           rows="2"
                           required></textarea>
             </div>
 
-            <!-- WHATSAPP -->
+            <!-- CONTACT -->
             <div class="mb-3">
-                <label class="form-label fw-bold">Whatsapp Number <span class="text-danger">*</span>
+                <label class="form-label fw-bold">Contact Number <span class="text-danger">*</span>
                 </label>
                 <input type="tel"
-                       id="Whatsapp"
+                       id="Contact"
                        class="form-control"
                        maxlength="10"
                        required>
             </div>
 
-            <!-- SLOT DROPDOWN -->
+            <!-- SLOT CHECKBOXES -->
             <div class="mb-3">
-                <label class="form-label fw-semibold">Available Slots <span style="color:red;">*</span>
+
+                <label class="form-label fw-semibold">
+                    Available Slots
                 </label>
-                <select id="slotDropdown"
-                        class="form-select"
-                        required
-                        disabled>
-                    <option>Select a date first</option>
+
+                <select
+                   id="slotContainer"
+                   class="form-select"
+                   multiple
+                   size="8"
+                >
+                   <option>Select a date first</option>
                 </select>
+
             </div>
 
             <button type="submit" class="btn btn-success w-100">
@@ -113,7 +119,7 @@
 
 <script>
 const datePicker = document.getElementById("datePicker");
-const slotDropdown = document.getElementById("slotDropdown");
+const slotDropdown = document.getElementById("slotContainer");
 const form = document.getElementById("bookingForm");
 
 const slotsUrl = "{% url 'appointments:slots_by_date' doctor.id %}";
@@ -133,18 +139,16 @@ datePicker.addEventListener("change", function () {
     if (selectedDate < today) {
         alert("Cannot select past dates");
         this.value = "";
-        slotDropdown.innerHTML = '<option>Select valid date</option>';
-        slotDropdown.disabled = true;
+        slotDropdown.innerHTML = "<option>Select valid date</option>";
         return;
     }
 
     // ❌ Beyond 3 days
     if (selectedDate > maxDate) {
-        alert("Only next 3 days allowed");
-        this.value = "";
-        slotDropdown.innerHTML = '<option>Select valid date</option>';
-        slotDropdown.disabled = true;
-        return;
+       alert("Only next 3 days allowed");
+       this.value = "";
+       slotContainer.innerHTML = "Select valid date";
+       return;
     }
 
     // ❌ Weekend
@@ -152,42 +156,41 @@ datePicker.addEventListener("change", function () {
     if (day === 0 || day === 6) {
         alert("No appointments on weekends");
         this.value = "";
-        slotDropdown.innerHTML = '<option>Select weekday</option>';
-        slotDropdown.disabled = true;
+        slotDropdown.innerHTML = "<option>Weekend not allowed</option>";
         return;
     }
 
     /* FETCH SLOTS */
-    slotDropdown.innerHTML = '<option>Loading...</option>';
-    slotDropdown.disabled = true;
+    slotDropdown.innerHTML = "<option>Loading slots...</option>";
     const consultationType =
     document.getElementById("consultationType").value || "ONLINE";
 
     fetch(`${slotsUrl}?date=${this.value}&type=${consultationType}`)
         .then(res => res.json())
         .then(data => {
-            slotDropdown.innerHTML = "";
 
-            if (!data.slots || data.slots.length === 0) {
-                slotDropdown.innerHTML =
-                    '<option>No slots available</option>';
-            } else {
-                slotDropdown.innerHTML =
-                    '<option>Select a slot</option>';
+           slotDropdown.innerHTML = "";
 
-                data.slots.forEach(slot => {
-                    const option = document.createElement("option");
-                    option.value = slot.id;
-                    option.textContent = slot.label;
-                    slotDropdown.appendChild(option);
-                });
-            }
+           if (!data.slots || data.slots.length === 0) {
 
-            slotDropdown.disabled = false;
-        })
+              slotDropdown.innerHTML =
+                  "<option>No slots available</option>";
+
+          } else {
+
+            data.slots.forEach(slot => {
+
+               slotDropdown.innerHTML += `
+                    <option value="${slot.id}">
+                       ${slot.label}
+                    </option>
+                `;
+            });
+        }
+})
         .catch(() => {
             slotDropdown.innerHTML =
-                '<option>Error loading slots</option>';
+                "<option>Error loading slots</option>";
         });
 });
 
@@ -195,11 +198,13 @@ datePicker.addEventListener("change", function () {
 form.addEventListener("submit", function (e) {
     e.preventDefault();
 
-    const slotId = slotDropdown.value;
+    const slotIds =
+    Array.from(slotDropdown.selectedOptions)
+   .map(option => option.value);
     const consultationType =
         document.getElementById("consultationType").value || "ONLINE";
 
-    if (!slotId) {
+    if (slotIds.length === 0) {
         alert("Please select a slot");
         return;
     }
@@ -211,14 +216,14 @@ form.addEventListener("submit", function (e) {
             "X-CSRFToken": csrfToken
         },
         body: JSON.stringify({
-            slot_id: slotId,
+            slot_ids: slotIds,
             consultation_type: consultationType,
             patient_name: document.getElementById("patient_name").value,
             age: document.getElementById("age").value,
            // gender: document.getElementById("gender").value,
            //health_history: document.getElementById("health_history").value,
-            current_health_problem: document.getElementById("current_problem").value,
-            whatsapp_number: document.getElementById("Whatsapp").value,
+            comments: document.getElementById("comments").value,
+            contact_number: document.getElementById("Contact").value,
         })
     })
     .then(res => res.json())

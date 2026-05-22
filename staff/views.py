@@ -111,7 +111,7 @@ def download_appointments(request, doctor_id):
     data = [[
         "S.No.", "Patient Name", "Age", 
          "Current Problem",
-        "Whatsapp", "Slot", "Booked On", "Status", "Payment"
+        "Contact", "Slot", "Booked On", "Status", "Payment"
     ]]
 
     # ✅ Table rows
@@ -126,7 +126,7 @@ def download_appointments(request, doctor_id):
             str(appt.patient_name or "-"),
             str(appt.age or "-"),
             str(appt.current_health_problem or "-"),
-            str(appt.whatsapp_number or "-"),
+            str(appt.contact_number or "-"),
             slot_text,
             appt.created_at.strftime("%Y-%m-%d"),
             str(appt.status or "-"),
@@ -185,12 +185,12 @@ def book_clinic_appointment(request, doctor_id):
 
     data = json.loads(request.body)
     slot_id = data.get("slot_id")
-    name = data.get("name")
+    patient_name = data.get("patient_name")
     age = data.get("age")
     # gender = data.get("gender")
     # health_history = data.get("health_history")
-    current_problem = data.get("current_problem")
-    whatsapp_number = data.get("whatsapp_number")
+    comments = data.get("comments")
+    contact_number = data.get("contact_number")
 
 
     slot = get_object_or_404(TimeSlot, id=slot_id, is_available=True)
@@ -215,12 +215,12 @@ def book_clinic_appointment(request, doctor_id):
         payment_mode="PAY_AT_CLINIC",
         payment_status="PENDING",
         status="BOOKED",
-        patient_name=name,
+        patient_name=patient_name,
         age=age,
         # gender=gender,
         # health_history=health_history,
-        current_health_problem=current_problem,
-        whatsapp_number=whatsapp_number,
+        current_health_problem=comments,
+        contact_number=contact_number,
     )
 
     slot.is_available = False
@@ -311,11 +311,13 @@ def slots_by_date(request, doctor_id):
     doctor = get_object_or_404(Doctor, id=doctor_id)
 
     appointment_type = request.GET.get("type", "ONLINE")
+    print("TYPE =", appointment_type)
 
     # 🔥 delete ALL slots for that date
     TimeSlot.objects.filter(
         doctor=doctor,
-        date=selected_date
+        date=selected_date,
+        slot_type=appointment_type
     ).delete()
 
     # ✅ CLINIC = 15 mins
@@ -328,32 +330,45 @@ def slots_by_date(request, doctor_id):
 
             slot_end = start_time + timedelta(minutes=15)
 
-            TimeSlot.objects.create(
+            TimeSlot.objects.get_or_create(
                 doctor=doctor,
                 date=selected_date,
                 start_time=start_time.time(),
                 end_time=slot_end.time(),
-                is_available=True
+                defaults={
+                    "is_available": True,
+                    "slot_type": "CLINIC"
+                }
             )
 
             start_time = slot_end
 
-    # ✅ ONLINE = 30 mins
+    # ✅ ONLINE = 15 mins
     else:
 
-        start_time = datetime.combine(selected_date, datetime.strptime("10:00", "%H:%M").time())
-        end_time = datetime.combine(selected_date, datetime.strptime("17:00", "%H:%M").time())
+        start_time = datetime.combine(
+            selected_date,
+            datetime.strptime("20:30", "%H:%M").time()
+        )
+
+        end_time = datetime.combine(
+           selected_date,
+           datetime.strptime("21:30", "%H:%M").time()
+        )
 
         while start_time < end_time:
 
-            slot_end = start_time + timedelta(minutes=30)
+            slot_end = start_time + timedelta(minutes=15)
 
-            TimeSlot.objects.create(
+            TimeSlot.objects.get_or_create(
                 doctor=doctor,
                 date=selected_date,
                 start_time=start_time.time(),
                 end_time=slot_end.time(),
-                is_available=True
+                defaults={
+                    "is_available":True,
+                    "slot_type":"ONLINE"
+                }
             )
 
             start_time = slot_end
@@ -361,7 +376,9 @@ def slots_by_date(request, doctor_id):
     slots = TimeSlot.objects.filter(
         doctor=doctor,
         date=selected_date,
-        is_available=True
+        is_available=True,
+        slot_type=appointment_type
+
     ).order_by("start_time")
 
     return JsonResponse({
@@ -394,14 +411,14 @@ def book_appointment_staff(request, slot_id):
     )
     
     user = request.user
-    phone = request.POST.get("whatsapp_number")
+    phone = request.POST.get("contact_number")
     
     Appointment.objects.create(
         user=user,
         doctor=slot.doctor,
         slot=slot,
         booked_by_staff=request.user,   # ✅ STAFF BOOKING
-        whatsapp_number=phone
+        contact_number=phone
     )
 
     slot.is_available = False
@@ -420,7 +437,7 @@ def check_user(request):
 
     exists = (
         User.objects.filter(username=mobile).exists()
-        or Appointment.objects.filter(whatsapp_number=mobile).exists()
+        or Appointment.objects.filter(contact_number=mobile).exists()
     )
 
     if exists:

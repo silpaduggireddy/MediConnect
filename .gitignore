@@ -205,3 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+accounts/__pycache__/__init__.cpython-312.pyc
+accounts/__pycache__/__init__.cpython-312.pyc
+accounts/__pycache__/__init__.cpython-312.pyc
+accounts/__pycache__/admin.cpython-312.pyc
+accounts/__pycache__/apps.cpython-312.pyc
+accounts/__pycache__/models.cpython-312.pyc
+accounts/__pycache__/signals.cpython-312.pyc
+accounts/__pycache__/urls.cpython-312.pyc
+accounts/__pycache__/views.cpython-312.pyc
