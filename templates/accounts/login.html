@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Verify OTP{% endblock %}
+{% block title %}Login{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -10,14 +10,8 @@
             <div class="card-body">
 
                 <h4 class="text-center mb-4">
-                    Verify OTP
+                    Login with Phone
                 </h4>
-
-                {% if message %}
-                    <div class="alert alert-success">
-                        {{ message }}
-                    </div>
-                {% endif %}
 
                 {% if error %}
                     <div class="alert alert-danger">
@@ -32,16 +26,16 @@
                     <div class="mb-3">
 
                         <label class="form-label">
-                            Enter OTP
+                            Phone Number
                         </label>
 
                         <input
                             type="text"
-                            name="otp"
+                            name="phone"
                             class="form-control"
-                            placeholder="6-digit OTP"
-                            maxlength="6"
-                            pattern="[0-9]{6}"
+                            placeholder="Enter phone number"
+                            maxlength="10"
+                            pattern="[0-9]{10}"
                             required
                         >
 
@@ -51,15 +45,22 @@
                         type="submit"
                         class="btn btn-success w-100"
                     >
-                        Verify & Continue
+                        Send OTP
                     </button>
 
                 </form>
 
                 <div class="text-center mt-3">
 
-                    <a href="?resend=1">
-                        Resend OTP
+                    <span>
+                        Don't have an account?
+                    </span>
+
+                    <a
+                        href="{% url 'phone_register' %}"
+                        class="btn btn-outline-primary btn-sm"
+                    >
+                        Register
                     </a>
 
                 </div>

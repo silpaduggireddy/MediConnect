@@ -31,11 +31,12 @@ def generate_default_slots(doctor, slot_date):
     if slot_date < timezone.localdate():
         return
 
-    # ❌ No weekends or holidays
-    if slot_date.weekday() >= 5 or slot_date in HOLIDAYS:
-        return
-    #  ✅ Only Tuesday, Wednesday, Thursday
+   # ✅ ONLINE only on Tue, Wed, Thu
     if slot_date.weekday() not in [1, 2, 3]:
+        return
+    
+    # ❌ Holidays
+    if slot_date in HOLIDAYS:
         return
 
     # ✅ ONLINE SLOT TIMING
@@ -61,26 +62,26 @@ def generate_clinic_slots(doctor, slot_date):
     slot_duration = timedelta(minutes=15)
 
     # Morning
-    start_time = datetime.combine(slot_date, time(7, 30))
-    end_time = datetime.combine(slot_date, time(13, 0))
+    # start_time = datetime.combine(slot_date, time(7, 30))
+    # end_time = datetime.combine(slot_date, time(13, 0))
 
-    while start_time < end_time:
+    # while start_time < end_time:
 
-        slot_end = start_time + slot_duration
+    #     slot_end = start_time + slot_duration
 
-        TimeSlot.objects.get_or_create(
-            doctor=doctor,
-            date=slot_date,
-            start_time=start_time.time(),
-            end_time=slot_end.time(),
-            defaults={"is_available": True}
-        )
+    #     TimeSlot.objects.get_or_create(
+    #         doctor=doctor,
+    #         date=slot_date,
+    #         start_time=start_time.time(),
+    #         end_time=slot_end.time(),
+    #         defaults={"is_available": True}
+    #     )
 
-        start_time = slot_end
+    #     start_time = slot_end
 
     # Afternoon
-    start_time = datetime.combine(slot_date, time(14, 0))
-    end_time = datetime.combine(slot_date, time(15, 0))
+    start_time = datetime.combine(slot_date, time(20, 30))
+    end_time = datetime.combine(slot_date, time(21, 30))
 
     while start_time < end_time:
 
@@ -101,33 +102,85 @@ def generate_clinic_slots(doctor, slot_date):
 
 @login_required
 def available_slots_by_date(request, doctor_id):
+
     date_str = request.GET.get("date")
 
     if not date_str:
-        return JsonResponse({"slots": []})
+
+        return JsonResponse({
+            "slots": []
+        })
 
     try:
-        selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+        selected_date = datetime.strptime(
+            date_str,
+            "%Y-%m-%d"
+        ).date()
+
     except ValueError:
-        return JsonResponse({"slots": []})
 
-    if selected_date.weekday() >= 5 or selected_date in HOLIDAYS:
-        return JsonResponse({"slots": []})
+        return JsonResponse({
+            "slots": []
+        })
 
-    doctor = get_object_or_404(Doctor, id=doctor_id)
+    doctor = get_object_or_404(
+        Doctor,
+        id=doctor_id
+    )
 
-    appointment_type = request.GET.get("type", "ONLINE")
+    appointment_type = request.GET.get(
+        "type",
+        "ONLINE"
+    )
 
-    # ✅ CLINIC = 15 mins
-    if appointment_type == "CLINIC":
+    # ❌ SUNDAY HOLIDAY
+    if selected_date.weekday() == 6:
 
-        generate_clinic_slots(doctor, selected_date)
+        return JsonResponse({
+            "slots": []
+        })
 
-    # ✅ ONLINE = 30 mins
-    else:
+    # ❌ CUSTOM HOLIDAYS
+    if selected_date in HOLIDAYS:
 
-        # Generate ONLINE slots
-        generate_default_slots(doctor, selected_date)
+        return JsonResponse({
+            "slots": []
+        })
+
+    # =========================
+    # ONLINE → Tue/Wed/Thu
+    # =========================
+
+    if appointment_type == "ONLINE":
+
+        if selected_date.weekday() not in [1, 2, 3]:
+
+            return JsonResponse({
+                "slots": []
+            })
+
+        generate_default_slots(
+            doctor,
+            selected_date
+        )
+
+    # =========================
+    # CLINIC → Saturday
+    # =========================
+
+    elif appointment_type == "CLINIC":
+
+        if selected_date.weekday() != 5:
+
+            return JsonResponse({
+                "slots": []
+            })
+
+        generate_clinic_slots(
+            doctor,
+            selected_date
+        )
 
     slots = TimeSlot.objects.filter(
         doctor=doctor,
@@ -136,11 +189,17 @@ def available_slots_by_date(request, doctor_id):
     ).order_by("start_time")
 
     return JsonResponse({
+
         "slots": [
+
             {
                 "id": s.id,
-                "label": f"{s.start_time.strftime('%I:%M %p')} - {s.end_time.strftime('%I:%M %p')}"
+
+                "label":
+                    f"{s.start_time.strftime('%I:%M %p')} - "
+                    f"{s.end_time.strftime('%I:%M %p')}"
             }
+
             for s in slots
         ]
     })
@@ -165,8 +224,7 @@ def book_appointment(request):
     # health_history= request.data.get("health_history")
     comments = request.data.get("comments")
     contact_number = request.data.get("contact_number")
-
-
+    reschedule_id = request.data.get("reschedule_id")
     appointments = []
 
     with transaction.atomic():
@@ -182,7 +240,57 @@ def book_appointment(request):
           doctor = slot.doctor
           amount = doctor.consultation_fee or 0
 
-          appointment = Appointment.objects.create(
+          # RESCHEDULE FLOW
+    if reschedule_id:
+
+        old_appointment = get_object_or_404(
+            Appointment,
+            id=reschedule_id,
+            user=request.user,
+            status="BOOKED"
+        )
+
+        # Check 12-hour rule
+        appointment_datetime = timezone.make_aware(
+            datetime.combine(
+                old_appointment.slot.date,
+                old_appointment.slot.start_time
+            )
+        )
+
+        now = timezone.now()
+
+        if appointment_datetime - now < timedelta(hours=12):
+
+            return Response(
+                {
+                    "error": "Appointments can only be rescheduled at least 12 hours before the slot."
+                },
+                status=400
+            )
+
+        # Free old slot
+        old_slot = old_appointment.slot
+
+        old_slot.is_available = True
+        old_slot.save()
+
+        # Assign new slot
+        old_appointment.slot = slot
+        old_appointment.consultation_type = consultation_type
+        old_appointment.patient_name = patient_name
+        old_appointment.age = age
+        old_appointment.comments = comments
+        old_appointment.contact_number = contact_number
+
+        old_appointment.save()
+
+        appointment = old_appointment
+
+    # NEW BOOKING
+    else:
+
+        appointment = Appointment.objects.create(
             user=request.user,
             doctor=doctor,
             slot=slot,
@@ -196,12 +304,7 @@ def book_appointment(request):
             status="BOOKED",
             payment_mode="ONLINE" if consultation_type == "ONLINE" else "OFFLINE"
         )
-
-          appointments.append(appointment)
-
-          slot.is_available = False
-          slot.save()
-    # 🏥 CLINIC → CONFIRM ONLY
+            # 🏥 CLINIC → CONFIRM ONLY
     if consultation_type == "CLINIC":
              print("test me")
              print(slot.doctor)
@@ -264,24 +367,49 @@ def appointment_history(request):
 # ------------------------
 @login_required
 def cancel_appointment(request, appointment_id):
+
     appointment = get_object_or_404(
         Appointment,
         id=appointment_id,
         user=request.user,
         status="BOOKED"
     )
+
+    # Prevent cancelling past appointments
     if appointment.is_past:
-        return HttpResponseForbidden("Cannot cancel past appointments")
 
-    if not appointment.can_cancel():
-        return HttpResponseForbidden("Cannot cancel this appointment.")
-    
+        return HttpResponseForbidden(
+            "Cannot cancel past appointments"
+        )
 
+    # Appointment datetime
+    appointment_datetime = timezone.make_aware(
+        datetime.combine(
+            appointment.date,
+            appointment.slot.start_time
+        )
+    )
 
+    # Current time
+    now = timezone.now()
+
+    # Time difference
+    time_difference = appointment_datetime - now
+
+    # Allow only before 12 hours
+    if time_difference < timedelta(hours=12):
+
+        return HttpResponseForbidden(
+            "Appointments can only be cancelled at least 12 hours before the slot."
+        )
+
+    # Free the slot
     slot = appointment.slot
+
     slot.is_available = True
     slot.save()
 
+    # Cancel appointment
     appointment.status = "CANCELLED"
     appointment.save()
 
@@ -449,5 +577,95 @@ def view_reports_by_appointment(request, appointment_id):
         {
             "appointment": appointment,
             "reports": reports
+        }
+    )
+
+@login_required
+def reschedule_appointment(request, appointment_id):
+
+    appointment = get_object_or_404(
+        Appointment,
+        id=appointment_id,
+        user=request.user,
+        status="BOOKED"
+    )
+
+    # Prevent rescheduling past appointments
+    if appointment.is_past:
+
+        return HttpResponseForbidden(
+            "Cannot reschedule past appointments"
+        )
+
+    # Appointment datetime
+    appointment_datetime = timezone.make_aware(
+        datetime.combine(
+            appointment.slot.date,
+            appointment.slot.start_time
+        )
+    )
+
+    # Current time
+    now = timezone.now()
+
+    # Time difference
+    time_difference = appointment_datetime - now
+
+    # Allow only before 12 hours
+    if time_difference < timedelta(hours=12):
+
+        return HttpResponseForbidden(
+            "Appointments can only be rescheduled at least 12 hours before the slot."
+        )
+
+    if request.method == "POST":
+
+        new_slot_id = request.POST.get("slot_id")
+
+        if not new_slot_id:
+
+            return HttpResponseForbidden(
+                "No slot selected"
+            )
+
+        with transaction.atomic():
+
+            # Lock new slot
+            new_slot = get_object_or_404(
+                TimeSlot.objects.select_for_update(),
+                id=new_slot_id,
+                is_available=True
+            )
+
+            # OLD SLOT
+            old_slot = appointment.slot
+
+            # Make old slot available
+            old_slot.is_available = True
+            old_slot.save()
+
+            # Assign new slot
+            appointment.slot = new_slot
+            appointment.save()
+
+            # Mark new slot unavailable
+            new_slot.is_available = False
+            new_slot.save()
+
+        return redirect("appointments:appointment_history")
+
+    # Show available slots of same doctor
+    slots = TimeSlot.objects.filter(
+        doctor=appointment.doctor,
+        date__gte=timezone.localdate(),
+        is_available=True
+    ).order_by("date", "start_time")
+
+    return render(
+        request,
+        "appointments/reschedule_appointment.html",
+        {
+            "appointment": appointment,
+            "slots": slots
         }
     )

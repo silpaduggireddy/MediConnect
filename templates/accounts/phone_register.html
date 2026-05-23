@@ -8,29 +8,54 @@
 
         <div class="card shadow-sm">
             <div class="card-body">
-                <h4 class="text-center mb-4">Register with Phone</h4>
+
+                <h4 class="text-center mb-4">
+                    Register with Phone
+                </h4>
+
                 {% if message %}
-                <p style="color:red; text-align:center;">
-                       {{ message }}
-                </p>
+                    <div class="alert alert-warning">
+                        {{ message }}
+                    </div>
                 {% endif %}
 
-                <form method="post" onsubmit="checkUser(event)">
+                {% if error %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                {% endif %}
+
+                <form
+                    method="post"
+                    id="registerForm"
+                    onsubmit="checkUser(event)"
+                >
                     {% csrf_token %}
 
                     <div class="mb-3">
-                        <label class="form-label">Phone Number</label>
+
+                        <label class="form-label">
+                            Phone Number
+                        </label>
+
                         <input
                             type="text"
                             name="phone"
                             class="form-control"
                             placeholder="Enter phone number"
                             maxlength="10"
+                            pattern="[0-9]{10}"
                             required
                         >
+
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label">User name</label>
+
+                        <label class="form-label">
+                            Username
+                        </label>
+
                         <input
                             type="text"
                             name="username"
@@ -38,17 +63,31 @@
                             placeholder="Enter username"
                             required
                         >
+
                     </div>
- 
-                    <button type="submit" class="btn btn-primary w-100">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary w-100"
+                    >
                         Send OTP
                     </button>
+
                 </form>
+
                 <div class="text-center mt-3">
-                    <span>Already have an account?</span>
-                    <a href="{% url 'login' %}" class="btn btn-outline-primary btn-sm">
-                       Login
+
+                    <span>
+                        Already have an account?
+                    </span>
+
+                    <a
+                        href="{% url 'login' %}"
+                        class="btn btn-outline-primary btn-sm"
+                    >
+                        Login
                     </a>
+
                 </div>
 
             </div>
@@ -56,20 +95,30 @@
 
     </div>
 </div>
+
 <script>
+
 function getCookie(name) {
+
     let cookieValue = null;
 
     if (document.cookie && document.cookie !== '') {
+
         let cookies = document.cookie.split(';');
 
         for (let i = 0; i < cookies.length; i++) {
+
             let cookie = cookies[i].trim();
 
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            if (
+                cookie.substring(0, name.length + 1)
+                === (name + '=')
+            ) {
+
                 cookieValue = decodeURIComponent(
                     cookie.substring(name.length + 1)
                 );
+
                 break;
             }
         }
@@ -79,22 +128,35 @@ function getCookie(name) {
 }
 
 function checkUser(event) {
+
     event.preventDefault();
 
-    let phone = document.querySelector("input[name='phone']").value;
+    let form = document.getElementById("registerForm");
 
-    fetch("/dashboard/staff/check-user/", {
+    let phone = document.querySelector(
+        "input[name='phone']"
+    ).value;
+
+    fetch("/auth/check-user/", {
+
         method: "POST",
+
         headers: {
             "Content-Type": "application/json",
             "X-CSRFToken": getCookie('csrftoken')
         },
-        body: JSON.stringify({ mobile: phone })
+
+        body: JSON.stringify({
+            mobile: phone
+        })
+
     })
+
     .then(res => res.json())
+
     .then(data => {
 
-        // ❌ Number already used
+        // Number already exists
         if (data.status === "exists") {
 
             alert("The number already exists");
@@ -102,10 +164,18 @@ function checkUser(event) {
             return;
         }
 
-        // ✅ New number
-        event.target.submit();
+        // Submit form
+        form.submit();
+    })
+
+    .catch(error => {
+
+        console.log(error);
+
+        alert("Something went wrong");
     });
 }
-</script>
-{% endblock %}
 
+</script>
+
+{% endblock %}

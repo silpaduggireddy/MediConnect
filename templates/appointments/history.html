@@ -40,57 +40,122 @@
             </td>
 
             <!-- ACTION -->
-            <td>
-                {% if appt.status == "BOOKED" and not appt.is_past %}
-                    <button
-                        class="btn btn-sm btn-danger"
-                        data-bs-toggle="modal"
-                        data-bs-target="#cancelModal{{ appt.id }}">
-                        Cancel
-                    </button>
+<td>
 
-                    <!-- Modal -->
-                    <div class="modal fade" id="cancelModal{{ appt.id }}" tabindex="-1">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content">
+    {% if appt.status == "BOOKED" and not appt.is_past %}
 
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Cancel Appointment</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
+        <div class="d-flex gap-2">
 
-                                <div class="modal-body">
-                                    Cancel appointment with
-                                    <strong>{{ appt.doctor.name }}</strong> on
-                                    <strong>{{ appt.slot.date }}</strong> at
-                                    <strong>{{ appt.slot.start_time }}</strong>?
-                                </div>
+            <!-- CANCEL -->
+            <button
+                class="btn btn-sm btn-danger"
+                data-bs-toggle="modal"
+                data-bs-target="#cancelModal{{ appt.id }}">
+                Cancel
+            </button>
 
-                                <div class="modal-footer">
-                                    <button class="btn btn-secondary" data-bs-dismiss="modal">
-                                        No
-                                    </button>
+            <a
+            href="{% url 'appointments:select_slot' appt.doctor.id %}?reschedule={{ appt.id }}"
+            class="btn btn-sm btn-warning"
+            >
+                Reschedule
+            </a>
+        </div>
 
-                                    <form method="post"
-                                          action="{% url 'appointments:cancel_appointment' appt.id %}">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger">
-                                            Yes, Cancel
-                                        </button>
-                                    </form>
-                                </div>
+        <!-- CANCEL MODAL -->
+        <div
+            class="modal fade"
+            id="cancelModal{{ appt.id }}"
+            tabindex="-1"
+        >
 
-                            </div>
-                        </div>
+            <div class="modal-dialog modal-dialog-centered">
+
+                <div class="modal-content">
+
+                    <div class="modal-header">
+
+                        <h5 class="modal-title">
+                            Cancel Appointment
+                        </h5>
+
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal">
+                        </button>
+
                     </div>
 
-                {% elif appt.is_past %}
-                    <span class="badge bg-secondary">Expired</span>
-                {% else %}
-                    <span class="text-muted">—</span>
-                {% endif %}
-            </td>
+                    <div class="modal-body">
 
+                        Cancel appointment with
+
+                        <strong>
+                            {{ appt.doctor.name }}
+                        </strong>
+
+                        on
+
+                        <strong>
+                            {{ appt.slot.date }}
+                        </strong>
+
+                        at
+
+                        <strong>
+                            {{ appt.slot.start_time }}
+                        </strong>?
+
+                    </div>
+
+                    <div class="modal-footer">
+
+                        <button
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            No
+                        </button>
+
+                        <form
+                            method="post"
+                            action="{% url 'appointments:cancel_appointment' appt.id %}"
+                        >
+
+                            {% csrf_token %}
+
+                            <button
+                                type="submit"
+                                class="btn btn-danger"
+                            >
+                                Yes, Cancel
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% elif appt.is_past %}
+        <span class="badge bg-secondary">
+            Expired
+        </span>
+
+        {% else %}
+
+        <span class="text-muted">
+            —
+        </span>
+
+        {% endif %}
+
+</td>
             <!-- REPORTS -->
             <td style="min-width: 220px;">
                 <div class="d-flex align-items-center gap-2">
