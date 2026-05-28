@@ -59,43 +59,90 @@ def generate_default_slots(doctor, slot_date):
 
 def generate_clinic_slots(doctor, slot_date):
 
+    # ❌ No past dates
+    if slot_date < timezone.localdate():
+        return
+
+    # ❌ Sunday holiday
+    if slot_date.weekday() == 6:
+        return
+
+    # ❌ Custom holidays
+    if slot_date in HOLIDAYS:
+        return
+
     slot_duration = timedelta(minutes=15)
 
-    # Morning
-    # start_time = datetime.combine(slot_date, time(7, 30))
-    # end_time = datetime.combine(slot_date, time(13, 0))
+    # =========================
+    # MORNING: 7 AM → 12 PM
+    # =========================
 
-    # while start_time < end_time:
+    start_time = datetime.combine(
+        slot_date,
+        time(7, 0)
+    )
 
-    #     slot_end = start_time + slot_duration
-
-    #     TimeSlot.objects.get_or_create(
-    #         doctor=doctor,
-    #         date=slot_date,
-    #         start_time=start_time.time(),
-    #         end_time=slot_end.time(),
-    #         defaults={"is_available": True}
-    #     )
-
-    #     start_time = slot_end
-
-    # Afternoon
-    start_time = datetime.combine(slot_date, time(20, 30))
-    end_time = datetime.combine(slot_date, time(21, 30))
+    end_time = datetime.combine(
+        slot_date,
+        time(12, 0)
+    )
 
     while start_time < end_time:
 
         slot_end = start_time + slot_duration
 
         TimeSlot.objects.get_or_create(
+
             doctor=doctor,
+
             date=slot_date,
+
             start_time=start_time.time(),
+
             end_time=slot_end.time(),
-            defaults={"is_available": True}
+
+            defaults={
+                "is_available": True
+            }
         )
 
         start_time = slot_end
+
+    # =========================
+    # AFTERNOON: 1 PM → 3 PM
+    # =========================
+
+    start_time = datetime.combine(
+        slot_date,
+        time(13, 0)
+    )
+
+    end_time = datetime.combine(
+        slot_date,
+        time(15, 0)
+    )
+
+    while start_time < end_time:
+
+        slot_end = start_time + slot_duration
+
+        TimeSlot.objects.get_or_create(
+
+            doctor=doctor,
+
+            date=slot_date,
+
+            start_time=start_time.time(),
+
+            end_time=slot_end.time(),
+
+            defaults={
+                "is_available": True
+            }
+        )
+
+        start_time = slot_end
+
 # ------------------------
 # AJAX: AVAILABLE SLOTS
 # ------------------------
@@ -171,7 +218,7 @@ def available_slots_by_date(request, doctor_id):
 
     elif appointment_type == "CLINIC":
 
-        if selected_date.weekday() != 5:
+        if selected_date.weekday() == 6:
 
             return JsonResponse({
                 "slots": []

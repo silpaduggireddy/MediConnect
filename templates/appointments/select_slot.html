@@ -25,12 +25,12 @@ Select Slot
                 value="{{ request.GET.type|default:'ONLINE' }}"
             >
 
-            <!-- DATE SELECT -->
+            <!-- DATE -->
             <div class="mb-3">
 
                 <label class="form-label fw-semibold">
                     Select Date
-                    <span style="color:red;">*</span>
+                    <span class="text-danger">*</span>
                 </label>
 
                 <input
@@ -46,7 +46,7 @@ Select Slot
             <!-- PATIENT NAME -->
             <div class="mb-3">
 
-                <label class="form-control fw-bold">
+                <label class="form-label fw-bold">
                     Patient Name
                     <span class="text-danger">*</span>
                 </label>
@@ -134,6 +134,7 @@ Select Slot
 
             </div>
 
+            <!-- SUBMIT -->
             <button
                 type="submit"
                 class="btn btn-success w-100"
@@ -174,27 +175,29 @@ const urlParams =
 const rescheduleId =
     urlParams.get("reschedule");
 
-/* DATE LIMITS */
+/* DATE LIMIT */
 
 document.addEventListener("DOMContentLoaded", function () {
 
     const today = new Date();
 
-    // THIS WEEK + NEXT WEEK
     const maxDate = new Date();
 
+    // NEXT 7 DAYS
     maxDate.setDate(today.getDate() + 7);
 
-    // FORMAT YYYY-MM-DD
-    const yyyy = maxDate.getFullYear();
+    const yyyy =
+        maxDate.getFullYear();
 
-    const mm = String(
-        maxDate.getMonth() + 1
-    ).padStart(2, '0');
+    const mm =
+        String(
+            maxDate.getMonth() + 1
+        ).padStart(2, '0');
 
-    const dd = String(
-        maxDate.getDate()
-    ).padStart(2, '0');
+    const dd =
+        String(
+            maxDate.getDate()
+        ).padStart(2, '0');
 
     datePicker.max =
         `${yyyy}-${mm}-${dd}`;
@@ -211,10 +214,10 @@ datePicker.addEventListener("change", function () {
 
     today.setHours(0, 0, 0, 0);
 
-    // MAX 14 DAYS
+    // MAX 7 DAYS
     const maxDate = new Date(today);
 
-    maxDate.setDate(today.getDate() + 13);
+    maxDate.setDate(today.getDate() + 7);
 
     /* ❌ PAST DATE */
 
@@ -230,12 +233,12 @@ datePicker.addEventListener("change", function () {
         return;
     }
 
-    /* ❌ BEYOND NEXT WEEK */
+    /* ❌ AFTER 7 DAYS */
 
     if (selectedDate > maxDate) {
 
         alert(
-            "Booking allowed only for this week and next week"
+            "Booking allowed only for the next 7 days"
         );
 
         this.value = "";
@@ -263,7 +266,7 @@ datePicker.addEventListener("change", function () {
         return;
     }
 
-    /* FETCH SLOTS */
+    /* LOAD SLOTS */
 
     slotDropdown.innerHTML =
         "<option>Loading slots...</option>";
@@ -408,7 +411,6 @@ form.addEventListener("submit", function (e) {
                         "Contact"
                     ).value,
 
-                /* RESCHEDULE */
                 reschedule_id:
                     rescheduleId
             })
