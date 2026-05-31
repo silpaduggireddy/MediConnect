@@ -10,7 +10,7 @@ from datetime import timedelta, datetime, time, date
 from .models import TimeSlot, Appointment, AppointmentReport
 from doctors.models import Doctor
 from django.http import HttpResponse
-
+from utils.whatsapp import send_whatsapp_message
 
 # ------------------------
 # HOLIDAYS
@@ -351,13 +351,19 @@ def book_appointment(request):
             status="BOOKED",
             payment_mode="ONLINE" if consultation_type == "ONLINE" else "OFFLINE"
         )
+            #Mark slot unavailable
+        slot.is_available = False
+        slot.save()
+        
+        appointments.append(appointment)
+        
             # 🏥 CLINIC → CONFIRM ONLY
     if consultation_type == "CLINIC":
              print("test me")
              print(slot.doctor)
              return Response({
                 "status": "CONFIRMED",
-                "appointment_id": appointments[0].id,
+                "appointment_id": appointment.id,
                 "message":  (
                     f"✅ Appointment Booked Successfully\n\n"
                     f"👨‍⚕️ Doctor: Dr. {doctor.name}\n"
@@ -366,9 +372,7 @@ def book_appointment(request):
                     f"📅 Date: {appointments[0].slot.date}\n"
                     f"⏰ Time: {appointments[0].slot.start_time}\n"
                     f"💰 Pay Rs. {amount} at clinic."
-        )
-                    
-    
+        ) 
 })
 
     # 💳 ONLINE → MUST GO TO PAYMENT
