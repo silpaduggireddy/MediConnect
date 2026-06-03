@@ -6,7 +6,7 @@ from .views import appointment_history, cancel_appointment,select_slot, book_app
 app_name = "appointments"
 
 urlpatterns = [
-    path("", views.select_slot, name="appointment_home"),
+    path("", appointment_history, name="appointment_home"),
     path("slots/<int:doctor_id>/", select_slot, name="select_slot"),
     path("book/", book_appointment, name="book_appointment"),
     path("history/", appointment_history, name="appointment_history"),

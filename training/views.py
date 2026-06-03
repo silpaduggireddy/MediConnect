@@ -1,9 +1,6 @@
-from django.shortcuts import render
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from .models import TrainingCourse
-from django.utils import timezone
-from .models import TrainingEnrollment
+from django.shortcuts import render
 from .models import TrainingCourse, TrainingEnrollment
 
 def training_list(request):
@@ -28,18 +25,6 @@ def training_list(request):
             "enrolled_course_ids": enrolled_course_ids,
         }
     )
-
-
-@login_required
-def course_enroll(request, course_id):
-    course = get_object_or_404(
-        TrainingCourse,
-        id=course_id,
-        is_active=True   # ✅ SAFETY FILTER
-    )
-
-    # Later: enrollment logic
-    return redirect("training_list")
 
 
 @login_required

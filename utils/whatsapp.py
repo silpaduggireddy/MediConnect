@@ -1,6 +1,11 @@
-from twilio.rest import Client
+try:
+    from twilio.rest import Client
+except ImportError:
+    Client = None
 
 def send_whatsapp_message(to_number, patient_name, doctor_name, date, time):
+    if Client is None:
+        raise RuntimeError("Twilio is not installed. Add twilio to requirements.txt to send WhatsApp messages.")
 
     account_sid = "YOUR_ACCOUNT_SID"
     auth_token = "YOUR_AUTH_TOKEN"

@@ -7,7 +7,6 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from doctors.models import Doctor
 from appointments.models import Appointment, TimeSlot
-from appointments.views import (generate_default_slots,generate_clinic_slots)
 
 from io import BytesIO
 from django.http import FileResponse
@@ -82,12 +81,12 @@ def download_appointments(request, doctor_id):
 
     doctor = get_object_or_404(Doctor, id=doctor_id)
     selected_date = request.GET.get("date")
+    sort = request.GET.get("sort", "desc")
     if selected_date:
         try:
             selected_date = datetime.strptime(selected_date, "%Y-%m-%d").date()
         except ValueError:
             selected_date = None
-        sort = request.GET.get("sort", "desc")
 
     appointments = Appointment.objects.filter(doctor=doctor)
     if selected_date:
@@ -125,7 +124,7 @@ def download_appointments(request, doctor_id):
             str(idx),
             str(appt.patient_name or "-"),
             str(appt.age or "-"),
-            str(appt.current_health_problem or "-"),
+            str(appt.comments or "-"),
             str(appt.contact_number or "-"),
             slot_text,
             appt.created_at.strftime("%Y-%m-%d"),
@@ -140,12 +139,10 @@ def download_appointments(request, doctor_id):
             0.5*inch,
             1.2*inch,
             0.5*inch,
-            0.8*inch,
-            2*inch,
+            1.8*inch,
+            1.2*inch,
             2*inch,
             1.2*inch,
-            1.5*inch,
-            1*inch,
             1*inch,
             1*inch
         ],
@@ -212,14 +209,14 @@ def book_clinic_appointment(request, doctor_id):
         slot=slot,
         consultation_type="CLINIC",
         amount=slot.doctor.consultation_fee,
-        payment_mode="PAY_AT_CLINIC",
+        payment_mode="OFFLINE",
         payment_status="PENDING",
         status="BOOKED",
         patient_name=patient_name,
         age=age,
         # gender=gender,
         # health_history=health_history,
-        current_health_problem=comments,
+        comments=comments,
         contact_number=contact_number,
     )
 
@@ -418,7 +415,15 @@ def book_appointment_staff(request, slot_id):
         doctor=slot.doctor,
         slot=slot,
         booked_by_staff=request.user,   # ✅ STAFF BOOKING
-        contact_number=phone
+        patient_name=request.POST.get("patient_name") or "Walk-in Patient",
+        age=request.POST.get("age") or None,
+        comments=request.POST.get("comments"),
+        contact_number=phone,
+        consultation_type="CLINIC",
+        amount=slot.doctor.consultation_fee,
+        payment_mode="OFFLINE",
+        payment_status="PENDING",
+        status="BOOKED",
     )
 
     slot.is_available = False

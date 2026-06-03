@@ -19,7 +19,7 @@ def online_consultation(request):
 @login_required
 def clinic_consultation(request):
 
-    return redirect("appointments:book_appointment")
+    return redirect("/dashboard/doctor/?type=CLINIC")
 
 
 @login_required
