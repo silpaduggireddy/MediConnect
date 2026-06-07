@@ -116,7 +116,7 @@
     function copyOTP() {
         const otpText = document.getElementById('otpDisplay').textContent;
         navigator.clipboard.writeText(otpText).then(function() {
-            alert('OTP copied to clipboard!');
+           
         }).catch(function(err) {
             console.error('Error copying OTP:', err);
         });

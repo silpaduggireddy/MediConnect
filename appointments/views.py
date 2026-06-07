@@ -336,25 +336,26 @@ def book_appointment(request):
             patient_name = patient.get(
                 "patient_name"
             )
+            
+            # age = patient.get(
+            #     "age"
+            # )
 
-            age = patient.get(
-                "age"
-            )
+            # comments = patient.get(
+            #     "comments"
+            # )
+            # if not patient_name:
+            #     return Response(
+            #         {"error": "Patient name is required."},
+            #         status=400
+            #     )
 
-            comments = patient.get(
-                "comments"
-            )
-            if not patient_name:
-                return Response(
-                    {"error": "Patient name is required."},
-                    status=400
-                )
-
-            if not age:
-                return Response(
-                    {"error": "Patient age is required."},
-                    status=400
-                )
+            # if not age:
+            #     return Response(
+            #         {"error": "Patient age is required."},
+            #         status=400
+            #     )
+        
             doctor = slot.doctor
             amount = doctor.consultation_fee or 0
 
@@ -404,8 +405,8 @@ def book_appointment(request):
                     slot=slot,
                     consultation_type=consultation_type,
                     patient_name=patient_name,
-                    age=age,
-                    comments=comments,
+                    #age=age,
+                    #comments=comments,
                     contact_number=contact_number,
                     amount=amount,
                     payment_status="PENDING",

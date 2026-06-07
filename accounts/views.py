@@ -1,5 +1,6 @@
 import random
 import json
+from urllib import response
 
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
@@ -60,7 +61,10 @@ def phone_register(request):
 
         print(f"REGISTER OTP for {phone}: {otp_value}")
 
-        return redirect("otp_verify")
+        response = redirect("otp_verify")
+        response.set_cookie("test_otp", otp_value, max_age=300)
+
+        return response
 
     return render(request, "accounts/phone_register.html")
 
@@ -140,6 +144,9 @@ def otp_verify(request):
                 request.session.pop("otp", None)
 
                 return redirect("post_login_redirect")
+
+    print("SESSION OTP =", request.session.get("otp"))
+    print("PHONE =", request.session.get("phone"))
 
     return render(
         request,
