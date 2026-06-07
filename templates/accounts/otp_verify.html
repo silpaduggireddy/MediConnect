@@ -69,4 +69,85 @@
 
     </div>
 </div>
+
+<!-- OTP TESTING POPUP MODAL -->
+<div class="modal fade" id="otpTestingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-success text-white">
+            <div class="modal-header bg-success border-0">
+                <h5 class="modal-title">
+                    ✅ OTP For Testing
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning text-dark mb-3">
+                    <strong>⚠️ For Testing & Development Purpose Only</strong>
+                </div>
+                
+                <p class="mb-3">
+                    Your OTP has been generated. Use the code below to verify your login:
+                </p>
+
+                <div class="card bg-white text-dark text-center p-4 mb-3">
+                    <h6 class="text-muted mb-2">Your OTP Code:</h6>
+                    <h1 class="fw-bold text-danger" id="otpDisplay" style="letter-spacing: 8px;">
+                        ------
+                    </h1>
+                    <p class="text-muted small mt-2 mb-0">
+                        Click the copy button or enter manually
+                    </p>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary w-100" onclick="copyOTP()">
+                        📋 Copy OTP
+                    </button>
+                    <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyOTP() {
+        const otpText = document.getElementById('otpDisplay').textContent;
+        navigator.clipboard.writeText(otpText).then(function() {
+            alert('OTP copied to clipboard!');
+        }).catch(function(err) {
+            console.error('Error copying OTP:', err);
+        });
+    }
+
+    // Check and display OTP modal on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const testOTP = getCookie('test_otp');
+        
+        if (testOTP) {
+            // Display OTP in popup
+            document.getElementById('otpDisplay').textContent = testOTP;
+            const otpModal = new bootstrap.Modal(document.getElementById('otpTestingModal'));
+            otpModal.show();
+        }
+    });
+</script>
+
 {% endblock %}

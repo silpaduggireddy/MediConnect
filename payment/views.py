@@ -37,7 +37,79 @@ def payment_page(request, appointment_id):
         {"appointment": appointment}
     )
 
+@login_required
+def payment_group(request):
 
+    ids = request.GET.get("ids", "")
+
+    appointment_ids = [
+        int(x)
+        for x in ids.split(",")
+        if x.strip()
+    ]
+
+    appointments = Appointment.objects.filter(
+        id__in=appointment_ids,
+        user=request.user,
+        consultation_type="ONLINE"
+    )
+
+    total_amount = sum(
+        a.amount
+        for a in appointments
+    )
+
+    return render(
+        request,
+        "payment/payment_group.html",
+        {
+            "appointments": appointments,
+            "total_amount": total_amount,
+            "appointment_ids": ids,
+        }
+    )
+
+@login_required
+def confirm_group_payment(request):
+
+    if request.method != "POST":
+        return redirect("services")
+
+    ids = request.POST.get(
+        "appointment_ids",
+        ""
+    )
+
+    appointment_ids = [
+        int(x)
+        for x in ids.split(",")
+        if x.strip()
+    ]
+
+    appointments = Appointment.objects.filter(
+        id__in=appointment_ids,
+        user=request.user,
+        consultation_type="ONLINE",
+        payment_status="PENDING"
+    )
+
+    for appointment in appointments:
+
+        appointment.payment_mode = "ONLINE"
+        appointment.payment_status = "PAID"
+        appointment.save()
+
+        Payment.objects.create(
+            appointment=appointment,
+            amount=appointment.amount,
+            method="ONLINE"
+        )
+
+    request.session["last_appointment_ids"] = appointment_ids
+
+    return redirect(
+        "payment:payment_success"
+    )
 
 @login_required
 def confirm_payment(request, appointment_id):
@@ -80,18 +152,17 @@ def confirm_payment(request, appointment_id):
 
 @login_required
 def payment_success(request):
-    appointment_id = request.session.get("last_appointment_id")
+    appointment_ids = request.session.get("last_appointment_ids", [])
 
-    appointment = get_object_or_404(
-        Appointment,
-        id=appointment_id,
-        user=request.user
-    )
+    appointments = Appointment.objects.filter(
+    id__in=appointment_ids,
+    user=request.user
+)
 
     return render(
         request,
         "payment/success.html",
-        {"appointment": appointment}
+        {"appointments": appointments}
     )
 
 

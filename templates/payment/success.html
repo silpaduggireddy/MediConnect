@@ -1,41 +1,74 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="card shadow p-4 text-center">
-    <h3 class="text-success">✅ Appointment Confirmed</h3>
+
+<div class="card shadow p-4">
+
+    <h3 class="text-success text-center">
+        ✅ Appointments Confirmed
+    </h3>
 
     <hr>
 
-    <p><strong>Doctor:</strong> {{ appointment.doctor.name }}</p>
-    <p><strong>Specialization:</strong> {{ appointment.doctor.specialization }}</p>
-    <p><strong>Patient Name:</strong>{{ appointment.patient_name }}</p>
-    
+    {% for appointment in appointments %}
 
-    <p>
-        <strong>Date:</strong> {{ appointment.slot.date }} <br>
-        <strong>Time:</strong>
-        {{ appointment.slot.start_time }} – {{ appointment.slot.end_time }}
-    </p>
+    <div class="mb-4 border-bottom pb-3">
 
-    <p class="text-muted mt-2">
-        Your slot has been successfully booked and locked.
-    </p>
-    <!-- DOWNLOAD PDF BUTTON -->
-    <a href="{% url 'appointments:download_invoice' appointment.id %}"
-        class="btn btn-outline-primary mt-3">
-        Download Appointment Confirmation
-    </a>
+        <p>
+            <strong>Doctor:</strong>
+            {{ appointment.doctor.name }}
+        </p>
 
-    <!-- 🆕 UPLOAD REPORTS BUTTON -->
-    <a href="{% url 'appointments:upload_report' appointment.id %}"
-       class="btn btn-outline-primary mt-3">
-        📄 Upload Medical Reports
-    </a>
+        <p>
+            <strong>Specialization:</strong>
+            {{ appointment.doctor.specialization }}
+        </p>
 
-    <br>
+        <p>
+            <strong>Patient Name:</strong>
+            {{ appointment.patient_name }}
+        </p>
 
-    <a href="{% url 'services' %}" class="btn btn-primary mt-3">
-        Return to Home
-    </a>
+        <p>
+            <strong>Date:</strong>
+            {{ appointment.slot.date }}
+            <br>
+
+            <strong>Time:</strong>
+            {{ appointment.slot.start_time }}
+            –
+            {{ appointment.slot.end_time }}
+        </p>
+
+        <a
+            href="{% url 'appointments:download_invoice' appointment.id %}"
+            class="btn btn-outline-primary btn-sm"
+        >
+            Download Confirmation
+        </a>
+
+        <a
+            href="{% url 'appointments:upload_report' appointment.id %}"
+            class="btn btn-outline-success btn-sm"
+        >
+            📄 Upload Report
+        </a>
+
+    </div>
+
+    {% endfor %}
+
+    <div class="text-center">
+
+        <a
+            href="{% url 'services' %}"
+            class="btn btn-primary"
+        >
+            Return to Home
+        </a>
+
+    </div>
+
 </div>
+
 {% endblock %}

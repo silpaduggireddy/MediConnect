@@ -12,6 +12,7 @@ Select Slot
 
 <div class="card shadow-sm">
 
+
     <div class="card-body">
 
         <form id="bookingForm">
@@ -42,57 +43,34 @@ Select Slot
                 >
 
             </div>
-
-            <!-- PATIENT NAME -->
-            <div class="mb-3">
+            <!-- NUMBER OF APPOINTMENTS -->
+            <div class="mb-3 mt-3">
 
                 <label class="form-label fw-bold">
-                    Patient Name
+                    Number of Appointments
                     <span class="text-danger">*</span>
                 </label>
 
-                <input
-                    type="text"
-                    id="patient_name"
-                    class="form-control"
+                <select
+                    id="appointmentCount"
+                    class="form-select"
                     required
                 >
+                    <option value="">
+                        Select Number of Appointments
+                    </option>
+
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
 
             </div>
 
-            <!-- AGE -->
-            <div class="mb-3">
-
-                <label class="form-label fw-bold">
-                    Age
-                </label>
-
-                <input
-                    type="number"
-                    id="age"
-                    class="form-control"
-                    min="1"
-                    max="99"
-                    required
-                >
-
-            </div>
-
-            <!-- COMMENTS -->
-            <div class="mb-3">
-
-                <label class="form-label fw-bold">
-                    Comments
-                </label>
-
-                <textarea
-                    id="comments"
-                    class="form-control"
-                    rows="2"
-                    required
-                ></textarea>
-
-            </div>
+            <!-- DYNAMIC PATIENT FIELDS CONTAINER -->
+            <div id="patientDetailsContainer"></div>
 
             <!-- CONTACT -->
             <div class="mb-3">
@@ -159,6 +137,77 @@ const slotDropdown =
 const form =
     document.getElementById("bookingForm");
 
+const appointmentCount =
+    document.getElementById(
+        "appointmentCount"
+    );
+
+appointmentCount.addEventListener(
+    "change",
+    function () {
+
+        const count =
+            parseInt(this.value || 0);
+
+        const container =
+            document.getElementById(
+                "patientDetailsContainer"
+            );
+
+        container.innerHTML = "";
+
+        for (let i = 1; i <= count; i++) {
+
+            container.innerHTML += `
+                <div class="card mb-3 p-3">
+
+                    <h5>
+                        Patient ${i}
+                    </h5>
+
+                    <div class="mb-2">
+                        <label class="form-label">
+                            Name *
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control patient-name"
+                            required
+                        >
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">
+                            Age *
+                        </label>
+
+                        <input
+                            type="number"
+                            class="form-control patient-age"
+                            min="1"
+                            max="120"
+                            required
+                        >
+                    </div>
+
+                    <div>
+                        <label class="form-label">
+                            Comments (Optional)
+                        </label>
+
+                        <textarea
+                            class="form-control patient-comments"
+                            rows="2"
+                        ></textarea>
+                    </div>
+
+                </div>
+            `;
+        }
+    }
+);
+
 const slotsUrl =
     "{% url 'appointments:slots_by_date' doctor.id %}";
 
@@ -167,13 +216,14 @@ const csrfToken =
         '[name=csrfmiddlewaretoken]'
     ).value;
 
-/* RESCHEDULE SUPPORT */
+/* RESCHEDULE SUPPORT COMMENTED OUT */
+// const urlParams =
+//     new URLSearchParams(window.location.search);
+// 
+// const rescheduleId =
+//     urlParams.get("reschedule");
 
-const urlParams =
-    new URLSearchParams(window.location.search);
-
-const rescheduleId =
-    urlParams.get("reschedule");
+/* DATE LIMIT */
 
 /* DATE LIMIT */
 
@@ -181,26 +231,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const today = new Date();
 
-    const maxDate = new Date();
+    let maxDate = new Date(today);
 
-    // NEXT 7 DAYS
-    maxDate.setDate(today.getDate() + 7);
+    let workingDays = 0;
 
-    const yyyy =
-        maxDate.getFullYear();
+    // Allow next 3 working days (skip Sunday)
+    while (workingDays < 3) {
 
-    const mm =
-        String(
-            maxDate.getMonth() + 1
-        ).padStart(2, '0');
+        maxDate.setDate(
+            maxDate.getDate() + 1
+        );
 
-    const dd =
-        String(
-            maxDate.getDate()
-        ).padStart(2, '0');
+        if (maxDate.getDay() === 0) {
+            continue;
+        }
+
+        workingDays++;
+    }
 
     datePicker.max =
-        `${yyyy}-${mm}-${dd}`;
+        maxDate.toISOString().split("T")[0];
 });
 
 /* DATE CHANGE */
@@ -214,11 +264,24 @@ datePicker.addEventListener("change", function () {
 
     today.setHours(0, 0, 0, 0);
 
-    // MAX 7 DAYS
-    const maxDate = new Date(today);
+    // MAX 3 WORKING DAYS
+    let maxDate = new Date(today);
 
-    maxDate.setDate(today.getDate() + 7);
+    let workingDays = 0;
 
+    while (workingDays < 3) {
+
+        maxDate.setDate(
+            maxDate.getDate() + 1
+        );
+
+        // Skip Sunday
+        if (maxDate.getDay() === 0) {
+            continue;
+        }
+
+        workingDays++;
+    }
     /* ❌ PAST DATE */
 
     if (selectedDate < today) {
@@ -233,12 +296,12 @@ datePicker.addEventListener("change", function () {
         return;
     }
 
-    /* ❌ AFTER 7 DAYS */
+    /* ❌ AFTER 3 DAYS */
 
     if (selectedDate > maxDate) {
 
         alert(
-            "Booking allowed only for the next 7 days"
+            "Booking allowed only for the next 3 working days"
         );
 
         this.value = "";
@@ -366,9 +429,59 @@ form.addEventListener("submit", function (e) {
             "consultationType"
         ).value || "ONLINE";
 
+    const patients = [];
+
+    const names =
+        document.querySelectorAll(
+            ".patient-name"
+        );
+
+    const ages =
+        document.querySelectorAll(
+            ".patient-age"
+        );
+
+    const comments =
+        document.querySelectorAll(
+            ".patient-comments"
+        );
+
+    for (let i = 0; i < names.length; i++) {
+
+        patients.push({
+
+            patient_name:
+                names[i].value,
+
+            age:
+                ages[i].value,
+
+            comments:
+                comments[i].value
+        });
+    }
+
     if (slotIds.length === 0) {
 
-        alert("Please select a slot");
+        alert("Please select slot(s)");
+
+        return;
+    }
+
+    const requiredAppointments =
+        parseInt(
+            document.getElementById(
+                "appointmentCount"
+            ).value
+        );
+
+    if (
+        slotIds.length !== requiredAppointments
+    ) {
+
+        alert(
+            `Please select exactly ${requiredAppointments} slots`
+        );
 
         return;
     }
@@ -388,31 +501,20 @@ form.addEventListener("submit", function (e) {
 
                 slot_ids: slotIds,
 
+                patients: patients,
+
                 consultation_type:
                     consultationType,
 
-                patient_name:
-                    document.getElementById(
-                        "patient_name"
-                    ).value,
-
-                age:
-                    document.getElementById(
-                        "age"
-                    ).value,
-
-                comments:
-                    document.getElementById(
-                        "comments"
-                    ).value,
-
+                    
                 contact_number:
                     document.getElementById(
                         "Contact"
                     ).value,
 
-                reschedule_id:
-                    rescheduleId
+                // RESCHEDULE FEATURE COMMENTED OUT
+                // reschedule_id:
+                //     rescheduleId
             })
         }
     )
@@ -433,7 +535,7 @@ form.addEventListener("submit", function (e) {
         ) {
 
             window.location.href =
-                `/payment/${data.appointment_id}/`;
+                `/payment/group/?ids=${data.appointment_ids.join(",")}`;
 
             return;
         }

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h3>Group Payment</h3>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Doctor</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Amount</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for appt in appointments %}
+        <tr>
+            <td>{{ appt.doctor.name }}</td>
+            <td>{{ appt.slot.date }}</td>
+            <td>
+                {{ appt.slot.start_time }}
+                -
+                {{ appt.slot.end_time }}
+            </td>
+            <td>₹{{ appt.amount }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- PAYMENT METHOD -->
+<div class="mb-3">
+
+    <label class="form-label">
+        Select Payment Method
+    </label>
+
+    <select
+        name="method"
+        class="form-select"
+        required
+        form="paymentForm"
+    >
+        <option value="">
+            -- Select --
+        </option>
+
+        <option value="UPI">
+            UPI
+        </option>
+
+        <option value="CARD">
+            Credit / Debit Card
+        </option>
+
+        <option value="NET_BANKING">
+            Net Banking
+        </option>
+    </select>
+
+</div>
+
+<h4>Total: ₹{{ total_amount }}</h4>
+
+<form method="POST" action="{% url 'payment:confirm_group_payment' %}" id="paymentForm">
+    {% csrf_token %}
+
+    <input
+        type="hidden"
+        name="appointment_ids"
+        value="{{ appointment_ids }}"
+    >
+
+    <button
+        type="submit"
+        name="method"
+        value="ONLINE"
+        class="btn btn-success"
+    >
+        Pay Now
+    </button>
+
+</form>
+
+<script>
+    document.getElementById('paymentForm').addEventListener('submit', function(e) {
+        const paymentMethod = document.querySelector('select[name="method"]').value;
+        
+        if (!paymentMethod) {
+            e.preventDefault();
+            alert('Please select a payment method to complete the booking');
+            return false;
+        }
+    });
+</script>
+
+{% endblock %}

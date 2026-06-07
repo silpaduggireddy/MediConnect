@@ -43,4 +43,17 @@
         Pay Now
     </button>
 </form>
+
+<script>
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const paymentMethod = document.querySelector('select[name="method"]').value;
+        
+        if (!paymentMethod) {
+            e.preventDefault();
+            alert('Please select a payment method to complete the booking');
+            return false;
+        }
+    });
+</script>
+
 {% endblock %}

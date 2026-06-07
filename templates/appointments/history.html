@@ -29,7 +29,15 @@
             <!-- ✅ Date -->
             <td>{{ appt.slot.date }}</td>
 
-            <td>{{ appt.slot.start_time }} – {{ appt.slot.end_time }}</td>
+            <td>
+                {% if appt.all_slots %}
+                    {% for slot in appt.all_slots %}
+                        <div>{{ slot.slot.start_time }} – {{ slot.slot.end_time }}</div>
+                    {% endfor %}
+                {% else %}
+                    {{ appt.slot.start_time }} – {{ appt.slot.end_time }}
+                {% endif %}
+            </td>
 
             <td>
                 {% if appt.status == "BOOKED" %}
@@ -44,9 +52,75 @@
 
     {% if appt.status == "BOOKED" and not appt.is_past %}
 
-        <div class="d-flex gap-2">
+        {% if appt.all_slots %}
+            <!-- Multiple slots - show individual cancel buttons -->
+            <div class="d-flex flex-column gap-2">
+                {% for individual_appt in appt.all_slots %}
+                    <button
+                        class="btn btn-sm btn-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#cancelModal{{ individual_appt.id }}">
+                        Cancel {{ individual_appt.slot.start_time }}
+                    </button>
 
-            <!-- CANCEL -->
+                    <!-- Individual Slot Cancel Modal -->
+                    <div
+                        class="modal fade"
+                        id="cancelModal{{ individual_appt.id }}"
+                        tabindex="-1"
+                    >
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">
+                                        Cancel Time Slot
+                                    </h5>
+                                    <button
+                                        type="button"
+                                        class="btn-close"
+                                        data-bs-dismiss="modal">
+                                    </button>
+                                </div>
+
+                                <div class="modal-body">
+                                    Cancel appointment with
+                                    <strong>{{ appt.doctor.name }}</strong>
+                                    on
+                                    <strong>{{ appt.slot.date }}</strong>
+                                    at
+                                    <strong>{{ individual_appt.slot.start_time }} – {{ individual_appt.slot.end_time }}</strong>
+                                    for patient
+                                    <strong>{{ individual_appt.patient_name }}</strong>?
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button
+                                        class="btn btn-secondary"
+                                        data-bs-dismiss="modal"
+                                    >
+                                        No
+                                    </button>
+
+                                    <form
+                                        method="post"
+                                        action="{% url 'appointments:cancel_appointment' individual_appt.id %}"
+                                    >
+                                        {% csrf_token %}
+                                        <button
+                                            type="submit"
+                                            class="btn btn-danger"
+                                        >
+                                            Yes, Cancel
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Single slot - show cancel button as before -->
             <button
                 class="btn btn-sm btn-danger"
                 data-bs-toggle="modal"
@@ -54,106 +128,100 @@
                 Cancel
             </button>
 
-            <a
-            href="{% url 'appointments:select_slot' appt.doctor.id %}?reschedule={{ appt.id }}"
-            class="btn btn-sm btn-warning"
+            <!-- CANCEL MODAL -->
+            <div
+                class="modal fade"
+                id="cancelModal{{ appt.id }}"
+                tabindex="-1"
             >
-                Reschedule
-            </a>
-        </div>
 
-        <!-- CANCEL MODAL -->
-        <div
-            class="modal fade"
-            id="cancelModal{{ appt.id }}"
-            tabindex="-1"
-        >
+                <div class="modal-dialog modal-dialog-centered">
 
-            <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
 
-                <div class="modal-content">
+                        <div class="modal-header">
 
-                    <div class="modal-header">
-
-                        <h5 class="modal-title">
-                            Cancel Appointment
-                        </h5>
-
-                        <button
-                            type="button"
-                            class="btn-close"
-                            data-bs-dismiss="modal">
-                        </button>
-
-                    </div>
-
-                    <div class="modal-body">
-
-                        Cancel appointment with
-
-                        <strong>
-                            {{ appt.doctor.name }}
-                        </strong>
-
-                        on
-
-                        <strong>
-                            {{ appt.slot.date }}
-                        </strong>
-
-                        at
-
-                        <strong>
-                            {{ appt.slot.start_time }}
-                        </strong>?
-
-                    </div>
-
-                    <div class="modal-footer">
-
-                        <button
-                            class="btn btn-secondary"
-                            data-bs-dismiss="modal"
-                        >
-                            No
-                        </button>
-
-                        <form
-                            method="post"
-                            action="{% url 'appointments:cancel_appointment' appt.id %}"
-                        >
-
-                            {% csrf_token %}
+                            <h5 class="modal-title">
+                                Cancel Appointment
+                            </h5>
 
                             <button
-                                type="submit"
-                                class="btn btn-danger"
-                            >
-                                Yes, Cancel
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal">
                             </button>
 
-                        </form>
+                        </div>
+
+                        <div class="modal-body">
+
+                            Cancel appointment with
+
+                            <strong>
+                                {{ appt.doctor.name }}
+                            </strong>
+
+                            on
+
+                            <strong>
+                                {{ appt.slot.date }}
+                            </strong>
+
+                            at
+
+                            <strong>
+                                {{ appt.slot.start_time }}
+                            </strong>
+                            ?
+
+                        </div>
+
+                        <div class="modal-footer">
+
+                            <button
+                                class="btn btn-secondary"
+                                data-bs-dismiss="modal"
+                            >
+                                No
+                            </button>
+
+                            <form
+                                method="post"
+                                action="{% url 'appointments:cancel_appointment' appt.id %}"
+                            >
+
+                                {% csrf_token %}
+
+                                <button
+                                    type="submit"
+                                    class="btn btn-danger"
+                                >
+                                    Yes, Cancel
+                                </button>
+
+                            </form>
+
+                        </div>
 
                     </div>
 
                 </div>
 
             </div>
-
-        </div>
-
-        {% elif appt.is_past %}
-        <span class="badge bg-secondary">
-            Expired
-        </span>
-
-        {% else %}
-
-        <span class="text-muted">
-            —
-        </span>
-
         {% endif %}
+
+    {% elif appt.is_past %}
+    <span class="badge bg-secondary">
+        Expired
+    </span>
+
+    {% else %}
+
+    <span class="text-muted">
+        —
+    </span>
+
+    {% endif %}
 
 </td>
             <!-- REPORTS -->
@@ -169,7 +237,7 @@
                         </a>
 
                         <!-- MANAGE (Delete page) -->
-                        {% if not appt.is_past %}
+                        {% if not appt.is_past and appt.status == "BOOKED" %}
                             <a href="{% url 'appointments:view_all_reports' appt.id %}"
                             target="_blank"
                             class="btn btn-sm btn-outline-danger">
@@ -180,7 +248,7 @@
                         <span class="text-muted">No reports</span>
                     {% endif %}
 
-                    {% if not appt.is_past %}
+                    {% if not appt.is_past and appt.status == "BOOKED" %}
                         <a href="{% url 'appointments:upload_report' appt.id %}"
                         class="btn btn-sm btn-outline-success">
                             ⬆️ Upload

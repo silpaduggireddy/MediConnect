@@ -194,7 +194,10 @@ def login_view(request):
 
         print(f"LOGIN OTP for {phone}: {otp_value}")
 
-        return redirect("otp_verify")
+        # TESTING: Show OTP in popup on otp_verify page
+        response = redirect("otp_verify")
+        response.set_cookie('test_otp', otp_value, max_age=300)  # 5 minutes
+        return response
 
     return render(request, "accounts/login.html")
 
