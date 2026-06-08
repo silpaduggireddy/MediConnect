@@ -172,20 +172,27 @@ def available_slots_by_date(request, doctor_id):
     )
 
     # Restrict booking to next 3 working days
-    max_booking_date = get_max_booking_date()
+    appointment_type = request.GET.get("type", "ONLINE")
 
-    if (
-        selected_date < timezone.localdate()
-        or selected_date > max_booking_date
-    ):
-        return JsonResponse({
-            "slots": []
-        })
+    if selected_date < timezone.localdate():
+        return JsonResponse({"slots": []})
 
-    appointment_type = request.GET.get(
-        "type",
-        "ONLINE"
-    )
+    if appointment_type == "CLINIC":
+        max_booking_date = get_max_booking_date()
+
+        if selected_date > max_booking_date:
+            return JsonResponse({"slots": []})
+
+    elif appointment_type == "ONLINE":
+        online_dates = get_online_booking_dates()
+
+        if selected_date not in online_dates:
+            return JsonResponse({"slots": []})
+
+        appointment_type = request.GET.get(
+            "type",
+            "ONLINE"
+        )
 
     # ❌ SUNDAY HOLIDAY
     if selected_date.weekday() == 6:
@@ -277,10 +284,7 @@ def available_slots_by_date(request, doctor_id):
 @login_required
 def book_appointment(request):
     slot_ids = request.data.get("slot_ids")
-    print("=" * 50)
-    print("SLOT IDS RECEIVED:", slot_ids)
-    print("=" * 50)
-    print("SLOT IDS RECEIVED:", slot_ids)
+    
     if not slot_ids:
        return Response(
           {"error": "No slots selected"},
@@ -321,15 +325,25 @@ def book_appointment(request):
                 is_available=True
             )
 
-            max_booking_date = get_max_booking_date()
+            if consultation_type == "CLINIC":
 
-            if slot.date > max_booking_date:
-                return Response(
-                    {
-                        "error": "Appointments can only be booked for the next 3 working days."
-                    },
-                    status=400
-                )
+                max_booking_date = get_max_booking_date()
+
+                if slot.date > max_booking_date:
+                    return Response(
+                        {"error": "Clinic appointments can only be booked for the next 3 working days."},
+                        status=400
+                    )
+
+            else:  # ONLINE
+
+                online_dates = get_online_booking_dates()
+
+                if slot.date not in online_dates:
+                    return Response(
+                        {"error": "Online appointments can only be booked on the next 3 available online consultation days."},
+                        status=400
+                    )
 
             patient = patients[index]
 
@@ -460,7 +474,20 @@ def book_appointment(request):
         "amount": sum(a.amount for a in appointments)
     })
 
+def get_online_booking_dates():
+    today = timezone.localdate()
 
+    online_dates = []
+    current_date = today
+
+    while len(online_dates) < 3:
+        current_date += timedelta(days=1)
+
+        if current_date.weekday() in [1, 2, 3]:  # Tue, Wed, Thu
+            if current_date not in HOLIDAYS:
+                online_dates.append(current_date)
+
+    return online_dates
 
 # ------------------------
 # PATIENT: SELECT SLOT (HTML)
