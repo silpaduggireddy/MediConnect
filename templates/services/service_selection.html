@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Choose Service{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Select a Service</h2>
+
+<div class="row g-4">
+
+    <div class="col-md-4">
+        <div class="card p-4 shadow-sm text-center">
+            <h4>Online Consultation</h4>
+            <p>Consult with doctor online</p>
+            <a href="{% url 'doctors:doctor_list' %}?type=ONLINE" class="btn btn-primary">
+                Book Now
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-4 shadow-sm text-center">
+            <h4>Clinic Consultation</h4>
+            <p>Visit clinic and pay at counter</p>
+            <a href="{% url 'doctors:doctor_list' %}?type=CLINIC" class="btn btn-primary">
+                Book Slot
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-4 shadow-sm text-center">
+            <h4>Training</h4>
+            <p>View available training programs</p>
+            <a href="{% url 'training:training_list' %}" class="btn btn-primary" >
+                View Courses
+            </a>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

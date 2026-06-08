@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Doctor Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <h2 class="fw-bold mb-4 text-primary">
+        👨‍⚕️ Doctor Dashboard
+    </h2>
+
+    <div class="row g-4">
+
+        <!-- DAILY APPOINTMENTS -->
+        <div class="col-md-4">
+            <div class="card p-4 shadow-sm text-center h-100">
+                <h4 class="mb-2">📅 Appointments</h4>
+                <p class="text-muted mb-3">
+                    View your daily appointments
+                </p>
+                <a href="{% url 'doctors:doctor_appointments' %}"
+                   class="btn btn-primary w-100">
+                    View Appointments
+                </a>
+            </div>
+        </div>
+
+        <!-- MANAGE SLOTS -->
+        <div class="col-md-4">
+            <div class="card p-4 shadow-sm text-center h-100">
+                <h4 class="mb-2">⏰ Manage Slots</h4>
+                <p class="text-muted mb-3">
+                    Edit your future availability
+                </p>
+                <a href="{% url 'doctors:doctor_slots' %}"
+                   class="btn btn-success w-100">
+                    Manage Slots
+                </a>
+            </div>
+        </div>
+
+        <!-- FUTURE EXTENSION (OPTIONAL) -->
+        <!--
+        <div class="col-md-4">
+            <div class="card p-4 shadow-sm text-center h-100">
+                <h4 class="mb-2">📊 Reports</h4>
+                <p class="text-muted mb-3">
+                    View performance insights
+                </p>
+                <button class="btn btn-outline-secondary w-100" disabled>
+                    Coming Soon
+                </button>
+            </div>
+        </div>
+        -->
+
+    </div>
+
+</div>
+{% endblock %}

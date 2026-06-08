@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold mb-0">📅 Doctor Appointments</h3>
+        <span class="text-muted">Select a doctor to view bookings</span>
+    </div>
+
+    {% if doctors %}
+        <!-- DROPDOWN -->
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Choose Doctor</label>
+
+            <select class="form-select" id="doctorSelect">
+                <option value="">-- Select Doctor --</option>
+
+                {% for d in doctors %}
+                    <option value="{{ d.id }}">
+                        👨‍⚕️ Dr. {{ d.name }}{% if d.specialization %} - {{ d.specialization }}{% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- BUTTON -->
+        <button class="btn btn-primary w-100"
+                onclick="goToAppointments()">
+            View Appointments →
+        </button>
+
+    {% else %}
+        <div class="alert alert-info text-center">
+            No doctors available
+        </div>
+    {% endif %}
+
+</div>
+
+<script>
+function goToAppointments() {
+    const doctorId = document.getElementById("doctorSelect").value;
+
+    if (!doctorId) {
+        alert("Please select a doctor");
+        return;
+    }
+
+    // Use Django URL safely
+    let baseUrl = "{% url 'staff:staff_doctor_appointments' 0 %}";
+    let finalUrl = baseUrl.replace("0", doctorId);
+
+    window.location.href = finalUrl;
+}
+</script>
+
+{% endblock %}

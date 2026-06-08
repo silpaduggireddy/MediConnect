@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Choose Doctor{% endblock %}
+
+{% block content %}
+
+<h3 class="mb-4">Select a Doctor</h3>
+
+<div class="mb-3">
+    <label class="form-label"><strong>Choose Doctor</strong></label>
+
+    <select class="form-select" id="doctorSelect" onchange="redirectDoctor(this)">
+        <option value="">-- Select Doctor --</option>
+
+        {% for doctor in doctors %}
+    <option value="{{ doctor.id }}">
+
+        {% if doctor.id == 2 %}
+            Dr. Bhupatindra Narain Jha - {{ doctor.specialization }}
+
+        {% elif doctor.id == 4 %}
+            Dr.(Mrs.) Madan Munchun Jha - {{ doctor.specialization }}
+
+        {% else %}
+            {{ doctor.name }} - {{ doctor.specialization }}
+        {% endif %}
+
+    </option>
+{% endfor %}
+    </select>
+</div>
+
+<script>
+function redirectDoctor(select) {
+    let doctorId = select.value;
+
+    if (doctorId) {
+        let baseUrl = "{% url 'appointments:select_slot' 0 %}";
+        let finalUrl = baseUrl.replace("0", doctorId);
+        let consultationType = "{{ consultation_type }}";
+
+        window.location.href = finalUrl + "?type=" + consultationType;
+    }
+}
+</script>
+
+{% endblock %}

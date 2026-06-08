@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-4">
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+
+                <h4 class="text-center mb-4">
+                    Register with Phone
+                </h4>
+
+                {% if message %}
+                    <div class="alert alert-warning">
+                        {{ message }}
+                    </div>
+                {% endif %}
+
+                {% if error %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                {% endif %}
+
+                <form
+                    method="post"
+                    id="registerForm"
+                    onsubmit="checkUser(event)"
+                >
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Phone Number
+                        </label>
+
+                        <input
+                            type="text"
+                            name="phone"
+                            class="form-control"
+                            placeholder="Enter phone number"
+                            maxlength="10"
+                            pattern="[0-9]{10}"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Username
+                        </label>
+
+                        <input
+                            type="text"
+                            name="username"
+                            class="form-control"
+                            placeholder="Enter username"
+                            required
+                        >
+
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary w-100"
+                    >
+                        Send OTP
+                    </button>
+
+                </form>
+
+                <div class="text-center mt-3">
+
+                    <span>
+                        Already have an account?
+                    </span>
+
+                    <a
+                        href="{% url 'login' %}"
+                        class="btn btn-outline-primary btn-sm"
+                    >
+                        Login
+                    </a>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+
+function getCookie(name) {
+
+    let cookieValue = null;
+
+    if (document.cookie && document.cookie !== '') {
+
+        let cookies = document.cookie.split(';');
+
+        for (let i = 0; i < cookies.length; i++) {
+
+            let cookie = cookies[i].trim();
+
+            if (
+                cookie.substring(0, name.length + 1)
+                === (name + '=')
+            ) {
+
+                cookieValue = decodeURIComponent(
+                    cookie.substring(name.length + 1)
+                );
+
+                break;
+            }
+        }
+    }
+
+    return cookieValue;
+}
+
+function checkUser(event) {
+
+    event.preventDefault();
+
+    let form = document.getElementById("registerForm");
+
+    let phone = document.querySelector(
+        "input[name='phone']"
+    ).value;
+
+    fetch("/auth/check-user/", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie('csrftoken')
+        },
+
+        body: JSON.stringify({
+            mobile: phone
+        })
+
+    })
+
+    .then(res => res.json())
+
+    .then(data => {
+
+        // Number already exists
+        if (data.status === "exists") {
+
+            alert("The number already exists");
+
+            return;
+        }
+
+        // Submit form
+        form.submit();
+    })
+
+    .catch(error => {
+
+        console.log(error);
+
+        alert("Something went wrong");
+    });
+}
+
+</script>
+
+{% endblock %}

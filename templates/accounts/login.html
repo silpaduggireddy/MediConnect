@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-4">
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+
+                <h4 class="text-center mb-4">
+                    Login with Phone
+                </h4>
+
+                {% if error %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                {% endif %}
+
+                <form method="post" id="loginForm">
+
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Phone Number
+                        </label>
+
+                        <input
+                            type="text"
+                            name="phone"
+                            class="form-control"
+                            placeholder="Enter phone number"
+                            maxlength="10"
+                            pattern="[0-9]{10}"
+                            required
+                        >
+
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="btn btn-success w-100"
+                    >
+                        Send OTP
+                    </button>
+
+                </form>
+
+                <div class="text-center mt-3">
+
+                    <span>
+                        Don't have an account?
+                    </span>
+
+                    <a
+                        href="{% url 'phone_register' %}"
+                        class="btn btn-outline-primary btn-sm"
+                    >
+                        Register
+                    </a>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- OTP TESTING POPUP MODAL -->
+<div class="modal fade" id="otpTestingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-primary text-white">
+            <div class="modal-header bg-primary border-0">
+                <h5 class="modal-title">
+                    ✅ OTP Sent Successfully (Testing)
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning text-dark">
+                    <strong>⚠️ For Testing Purpose Only</strong>
+                </div>
+                
+                <p class="text-center mb-3">
+                    Your OTP has been sent to the registered phone number.
+                </p>
+
+                <div class="card bg-white text-dark text-center p-4 mb-3">
+                    <h6 class="text-muted mb-2">Your OTP Code:</h6>
+                    <h2 class="fw-bold text-danger" id="otpDisplay">
+                        ------
+                    </h2>
+                    <p class="text-muted small mt-2">
+                        Copy this code and paste it on the next page
+                    </p>
+                </div>
+
+                <button type="button" class="btn btn-light w-100" data-bs-dismiss="modal">
+                    Continue to OTP Verification
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Check if OTP was generated and show modal
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get OTP from session storage if available
+        const storedOTP = sessionStorage.getItem('loginOTP');
+        
+        if (storedOTP) {
+            // Display OTP in popup
+            document.getElementById('otpDisplay').textContent = storedOTP;
+            const otpModal = new bootstrap.Modal(document.getElementById('otpTestingModal'));
+            otpModal.show();
+            
+            // Clear OTP from storage after displaying
+            sessionStorage.removeItem('loginOTP');
+        }
+    });
+
+    // Intercept form submission
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        // The form will submit normally and redirect
+        // OTP modal will show on the otp_verify page
+    });
+</script>
+
+{% endblock %}

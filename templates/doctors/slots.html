@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Manage Slots{% endblock %}
+
+{% block content %}
+<h3 class="fw-bold mb-3">⏰ Manage Slots</h3>
+
+<!-- DATE PICKER -->
+<form method="get" class="mb-4">
+    <label class="form-label fw-semibold">Select Date</label>
+    <input type="date"
+           name="date"
+           value="{{ selected_date|date:'Y-m-d' }}"
+           min="{{ today|date:'Y-m-d' }}"
+           class="form-control w-25"
+           onchange="this.form.submit()">
+</form>
+
+{% if selected_date %}
+
+<!-- ADD SLOT -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <h6 class="fw-semibold mb-3">➕ Add Slot</h6>
+
+        <!-- POST to SAME VIEW -->
+        <form method="post" class="row g-3">
+            {% csrf_token %}
+
+            <div class="col-md-4">
+                <input type="time"
+                       name="start_time"
+                       class="form-control"
+                       required>
+            </div>
+
+            <div class="col-md-4">
+                <input type="time"
+                       name="end_time"
+                       class="form-control"
+                       required>
+            </div>
+
+            <div class="col-md-4">
+                <button class="btn btn-success w-100">
+                    Add Slot
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- SLOT LIST -->
+<table class="table table-bordered align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>Time</th>
+            <th>Status</th>
+            <th style="width:180px;">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    {% for s in slots %}
+        <tr>
+            <td>{{ s.start_time }} – {{ s.end_time }}</td>
+
+            <td>
+                {% if s.is_available %}
+                    <span class="badge bg-success">Available</span>
+                {% else %}
+                    <span class="badge bg-secondary">Booked</span>
+                {% endif %}
+            </td>
+
+            <td>
+                {% if s.is_available %}
+                    <a href="{% url 'doctors:doctor_edit_slot' s.id %}"
+                       class="btn btn-sm btn-outline-primary">
+                        Edit
+                    </a>
+
+                    <form method="post"
+                          action="{% url 'doctors:delete_slot' s.id %}"
+                          class="d-inline"
+                          onsubmit="return confirm('Delete this slot?');">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger">
+                            Delete
+                        </button>
+                    </form>
+                {% else %}
+                    <span class="text-muted">Locked</span>
+                {% endif %}
+            </td>
+        </tr>
+    {% empty %}
+        <tr>
+            <td colspan="3" class="text-center text-muted">
+                No slots for this date
+            </td>
+        </tr>
+    {% endfor %}
+
+    </tbody>
+</table>
+
+{% else %}
+<div class="alert alert-info">
+    Please select a date to manage slots.
+</div>
+{% endif %}
+
+{% endblock %}
