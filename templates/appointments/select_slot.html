@@ -97,18 +97,11 @@ Select Slot
                     Available Slots
                 </label>
 
-                <select
-                    id="slotContainer"
-                    class="form-select"
-                    multiple
-                    size="8"
-                >
+                <div id="slotContainer">
+                    Select a date first
+                </div>
 
-                    <option>
-                        Select a date first
-                    </option>
-
-                </select>
+            
 
             </div>
 
@@ -162,7 +155,11 @@ appointmentCount.addEventListener(
                 <div class="card mb-3 p-3">
 
                     <h5>
-                        Patient ${i}
+                        ${
+                            document.getElementById("consultationType").value === "ONLINE"
+                            ? "Patient"
+                            : `Patient ${i}`
+                        }
                     </h5>
 
                     <div class="mb-2">
@@ -201,7 +198,7 @@ appointmentCount.addEventListener(
                             rows="2"
                         ></textarea>
                     </div>
-                    -->
+                        -->
 
                 </div>
             `;
@@ -326,7 +323,7 @@ datePicker.addEventListener("change", function () {
         this.value = "";
 
         slotDropdown.innerHTML =
-            "<option>Select valid date</option>";
+            "<p>Select valid date</p>";
 
         return;
     }
@@ -343,7 +340,7 @@ datePicker.addEventListener("change", function () {
         this.value = "";
 
         slotDropdown.innerHTML =
-            "<option>Holiday</option>";
+            "<p>Holiday</p>";
 
         return;
     }
@@ -374,7 +371,7 @@ datePicker.addEventListener("change", function () {
         ) {
 
             slotDropdown.innerHTML =
-                "<option>No slots available</option>";
+                "<p>No slots available</p>";
 
             return;
         }
@@ -407,11 +404,45 @@ datePicker.addEventListener("change", function () {
                 }
             }
 
-            slotDropdown.innerHTML += `
-                <option value="${slot.id}">
-                    ${slot.label}
-                </option>
-            `;
+            if (consultationType === "ONLINE") {
+
+                slotDropdown.innerHTML += `
+                    <div class="form-check mb-2">
+                        <input
+                            class="form-check-input slot-radio"
+                            type="radio"
+                            name="slot"
+                            value="${slot.id}"
+                            id="slot_${slot.id}"
+                        >
+                        <label
+                            class="form-check-label"
+                            for="slot_${slot.id}"
+                        >
+                            ${slot.label}
+                        </label>
+                    </div>
+                `;
+
+            } else {
+
+                slotDropdown.innerHTML += `
+                    <div class="form-check mb-2">
+                        <input
+                            class="form-check-input slot-checkbox"
+                            type="checkbox"
+                            value="${slot.id}"
+                            id="slot_${slot.id}"
+                        >
+                        <label
+                            class="form-check-label"
+                            for="slot_${slot.id}"
+                        >
+                            ${slot.label}
+                        </label>
+                    </div>
+                `;
+            }
         });
 
         if (
@@ -438,15 +469,43 @@ form.addEventListener("submit", function (e) {
 
     e.preventDefault();
 
-    const slotIds =
-        Array.from(
-            slotDropdown.selectedOptions
-        ).map(option => option.value);
-
     const consultationType =
         document.getElementById(
             "consultationType"
         ).value || "ONLINE";
+    
+
+    let slotIds = [];
+
+    if (consultationType === "ONLINE") {
+
+        const selected =
+            document.querySelector(
+                ".slot-radio:checked"
+            );
+
+        if (selected) {
+            slotIds.push(selected.value);
+        }
+
+    } else {
+
+        slotIds =
+            Array.from(
+                document.querySelectorAll(
+                    ".slot-checkbox:checked"
+                )
+            ).map(cb => cb.value);
+    }
+    if (
+        consultationType === "ONLINE" &&
+        slotIds.length > 1
+    ) {
+        alert(
+            "Only one slot can be selected for online consultation."
+        );
+        return;
+    }
 
     const patients = [];
 
