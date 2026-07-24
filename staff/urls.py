@@ -10,6 +10,7 @@ from .views import (
     update_appointment_status,
     slots_by_date,   # 🔥 ADD THIS
     download_appointments,
+    download_staff_appointment,
     check_user,
     login_check_user,
 )
@@ -32,6 +33,12 @@ urlpatterns = [
         "doctor/<int:doctor_id>/download_appointments/",
         download_appointments,
         name="download_appointments"
+    ),
+
+    path(
+        "appointment/<int:appointment_id>/download/",
+        download_staff_appointment,
+        name="download_staff_appointment"
     ),
 
     path(

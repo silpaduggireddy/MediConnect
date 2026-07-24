@@ -119,10 +119,23 @@ Select Slot
 
 </div>
 
+{{ online_booking_dates|json_script:"onlineBookingDates" }}
+
 <script>
 
 const datePicker =
     document.getElementById("datePicker");
+
+const consultationTypeInput =
+    document.getElementById("consultationType");
+
+const onlineBookingDates =
+    JSON.parse(
+        document.getElementById("onlineBookingDates").textContent
+    );
+
+const onlineBookingDateSet =
+    new Set(onlineBookingDates);
 
 const slotDropdown =
     document.getElementById("slotContainer");
@@ -223,17 +236,19 @@ const csrfToken =
 
 /* DATE LIMIT */
 
-/* DATE LIMIT */
+function toDateInputValue(date) {
+    return date.toISOString().split("T")[0];
+}
 
-document.addEventListener("DOMContentLoaded", function () {
-
+function getClinicMaxDate() {
     const today = new Date();
 
-    let maxDate = new Date(today);
+    today.setHours(0, 0, 0, 0);
+
+    const maxDate = new Date(today);
 
     let workingDays = 0;
 
-    // Allow next 3 working days (skip Sunday)
     while (workingDays < 3) {
 
         maxDate.setDate(
@@ -247,12 +262,26 @@ document.addEventListener("DOMContentLoaded", function () {
         workingDays++;
     }
 
-    datePicker.max =
-        maxDate.toISOString().split("T")[0];
+    return maxDate;
+}
+
+function applyDateLimits() {
+    if (consultationTypeInput.value === "ONLINE") {
+        datePicker.min = onlineBookingDates[0] || "{{ today|date:'Y-m-d' }}";
+        datePicker.max = onlineBookingDates[onlineBookingDates.length - 1] || "";
+        return;
+    }
+
+    datePicker.min = "{{ today|date:'Y-m-d' }}";
+    datePicker.max = toDateInputValue(getClinicMaxDate());
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    applyDateLimits();
     
          // ONLINE CONSULTATION => FORCE 1 APPOINTMENT
     const consultationType =
-        document.getElementById("consultationType").value;
+        consultationTypeInput.value;
 
     const appointmentCountDiv =
         document.getElementById("appointmentCountDiv");
@@ -272,6 +301,12 @@ document.addEventListener("DOMContentLoaded", function () {
 /* DATE CHANGE */
 
 datePicker.addEventListener("change", function () {
+    if (!this.value) {
+        slotDropdown.innerHTML =
+            "Select a date first";
+
+        return;
+    }
 
     const selectedDate =
         new Date(this.value + "T00:00:00");
@@ -280,24 +315,14 @@ datePicker.addEventListener("change", function () {
 
     today.setHours(0, 0, 0, 0);
 
-    // MAX 3 WORKING DAYS
-    let maxDate = new Date(today);
+    const consultationType =
+        consultationTypeInput.value || "ONLINE";
 
-    let workingDays = 0;
+    const maxDate =
+        consultationType === "ONLINE"
+            ? new Date(datePicker.max + "T00:00:00")
+            : getClinicMaxDate();
 
-    while (workingDays < 3) {
-
-        maxDate.setDate(
-            maxDate.getDate() + 1
-        );
-
-        // Skip Sunday
-        if (maxDate.getDay() === 0) {
-            continue;
-        }
-
-        workingDays++;
-    }
     /* ❌ PAST DATE */
 
     if (selectedDate < today) {
@@ -317,13 +342,32 @@ datePicker.addEventListener("change", function () {
     if (selectedDate > maxDate) {
 
         alert(
-            "Booking allowed only for the next 3 working days"
+            consultationType === "ONLINE"
+                ? "Online appointments can be booked only on the next available Tuesday, Wednesday, and Thursday slots."
+                : "Booking allowed only for the next 3 working days"
         );
 
         this.value = "";
 
         slotDropdown.innerHTML =
             "<p>Select valid date</p>";
+
+        return;
+    }
+
+    if (
+        consultationType === "ONLINE" &&
+        !onlineBookingDateSet.has(this.value)
+    ) {
+
+        alert(
+            "Online appointments are available only on the next valid Tuesday, Wednesday, and Thursday dates."
+        );
+
+        this.value = "";
+
+        slotDropdown.innerHTML =
+            "<p>Select an available online date</p>";
 
         return;
     }
@@ -350,11 +394,6 @@ datePicker.addEventListener("change", function () {
     slotDropdown.innerHTML =
         "<option>Loading slots...</option>";
 
-    const consultationType =
-        document.getElementById(
-            "consultationType"
-        ).value || "ONLINE";
-
     fetch(
         `${slotsUrl}?date=${this.value}&type=${consultationType}`
     )
@@ -371,7 +410,7 @@ datePicker.addEventListener("change", function () {
         ) {
 
             slotDropdown.innerHTML =
-                "<p>No slots available</p>";
+                "<p>Online consultation services are available only on Tuesday, Wednesday, and Thursday</p>";
 
             return;
         }
@@ -623,10 +662,8 @@ form.addEventListener("submit", function (e) {
             return;
         }
 
-        alert(data.message);
-
         window.location.href =
-            "{% url 'appointments:appointment_history' %}";
+            `/payment/success/?ids=${data.appointment_ids.join(",")}`;
     })
 
     .catch(() => {

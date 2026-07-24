@@ -16,6 +16,7 @@
             <th>Status</th>
             <!-- ❌ Booked On removed -->
             <th>Action</th>
+            <th>Download</th>
             <th style="min-width: 320px;">Reports</th>
         </tr>
     </thead>
@@ -224,6 +225,21 @@
     {% endif %}
 
 </td>
+            <!-- DOWNLOAD -->
+            <td>
+                {% if appt.consultation_type == "ONLINE" and appt.payment_status != "PAID" %}
+                    <span class="text-muted">Payment pending</span>
+                {% elif appt.status == "BOOKED" %}
+                    <a
+                        href="{% url 'appointments:download_invoice' appt.id %}"
+                        class="btn btn-sm btn-outline-primary"
+                    >
+                        Download
+                    </a>
+                {% else %}
+                    <span class="text-muted">Unavailable</span>
+                {% endif %}
+            </td>
             <!-- REPORTS -->
             <td style="min-width: 220px;">
                 <div class="d-flex align-items-center gap-2">

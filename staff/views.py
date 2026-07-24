@@ -1,12 +1,14 @@
 import json
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta, time
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
+from django.db import transaction
 from django.views.decorators.http import require_POST
 from doctors.models import Doctor
 from appointments.models import Appointment, TimeSlot
+from utils.appointment_pdf import build_appointment_confirmation_pdf
 
 from io import BytesIO
 from django.http import FileResponse
@@ -14,8 +16,10 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Paragraph
 
 
 # -------------------------
@@ -27,6 +31,56 @@ def staff_only(request):
         hasattr(request.user, "profile") and
         request.user.profile.role == "STAFF"
     )
+
+
+def get_staff_clinic_max_date():
+    today = timezone.localdate()
+    working_days = 0
+    current_date = today
+
+    while working_days < 3:
+        current_date += timedelta(days=1)
+
+        if current_date.weekday() == 6:
+            continue
+
+        working_days += 1
+
+    return current_date
+
+
+def generate_staff_clinic_slots(doctor, slot_date):
+    if slot_date < timezone.localdate():
+        return
+
+    if slot_date.weekday() == 6:
+        return
+
+    slot_duration = timedelta(minutes=15)
+    slot_ranges = [
+        (time(7, 30), time(12, 0)),
+        (time(13, 0), time(15, 0)),
+    ]
+
+    for start, end in slot_ranges:
+        current = datetime.combine(slot_date, start)
+        end_dt = datetime.combine(slot_date, end)
+
+        while current < end_dt:
+            slot_end = current + slot_duration
+
+            TimeSlot.objects.get_or_create(
+                doctor=doctor,
+                date=slot_date,
+                start_time=current.time(),
+                end_time=slot_end.time(),
+                defaults={
+                    "is_available": True,
+                    "slot_type": "CLINIC",
+                }
+            )
+
+            current = slot_end
 
 
 # -------------------------
@@ -58,13 +112,11 @@ def doctor_slots(request, doctor_id):
 
     doctor = get_object_or_404(Doctor, id=doctor_id)
     today = timezone.now().date()
-    tomorrow = today + timedelta(days=1)
-    max_date = today + timedelta(days=3)
+    max_date = get_staff_clinic_max_date()
     return render(request, "staff/select_slot.html", {
         "doctor": doctor,
-        "min_date": tomorrow,
-        "max_date" : max_date  
-        
+        "today": today,
+        "max_date": max_date,
     })
 
 
@@ -108,9 +160,7 @@ def download_appointments(request, doctor_id):
 
     # ✅ Table header
     data = [[
-        "S.No.", "Patient Name", "Age", 
-         "Current Problem",
-        "Contact", "Slot", "Booked On", "Status", "Payment"
+        "S.No.", "Patient Name", "Contact", "Slot", "Booked On", "Status", "Payment"
     ]]
 
     # ✅ Table rows
@@ -123,8 +173,6 @@ def download_appointments(request, doctor_id):
         data.append([
             str(idx),
             str(appt.patient_name or "-"),
-            str(appt.age or "-"),
-            str(appt.comments or "-"),
             str(appt.contact_number or "-"),
             slot_text,
             appt.created_at.strftime("%Y-%m-%d"),
@@ -138,8 +186,6 @@ def download_appointments(request, doctor_id):
         colWidths=[
             0.5*inch,
             1.2*inch,
-            0.5*inch,
-            1.8*inch,
             1.2*inch,
             2*inch,
             1.2*inch,
@@ -175,58 +221,100 @@ def download_appointments(request, doctor_id):
         filename = f"appointments_{doctor_id}_{selected_date}.pdf" if selected_date else f"appointments_{doctor_id}.pdf"
     )
 
+
+@login_required
+def download_staff_appointment(request, appointment_id):
+    if not staff_only(request):
+        return redirect("phone_register")
+
+    appointment = get_object_or_404(
+        Appointment.objects.select_related("doctor", "slot", "user"),
+        id=appointment_id
+    )
+
+    return build_appointment_confirmation_pdf(appointment, [appointment])
+
 @login_required
 def book_clinic_appointment(request, doctor_id):
     if not staff_only(request):
         return JsonResponse({"error": "Unauthorized"}, status=403)
 
     data = json.loads(request.body)
-    slot_id = data.get("slot_id")
-    patient_name = data.get("patient_name")
-    age = data.get("age")
-    # gender = data.get("gender")
-    # health_history = data.get("health_history")
-    comments = data.get("comments")
+    slot_ids = data.get("slot_ids")
+    patients = data.get("patients", [])
     contact_number = data.get("contact_number")
 
+    if not slot_ids:
+        return JsonResponse({"error": "Please select at least one slot."}, status=400)
 
-    slot = get_object_or_404(TimeSlot, id=slot_id, is_available=True)
-    today = timezone.localdate()
-    min_date = today + timedelta(days=1)
-    max_date = today + timedelta(days=3)
-    # 🔥 DATE VALIDATION
-    if slot.date <= today:
-         return JsonResponse({"message": "Today booking  not allowed"}, status=400)
-    if slot.date.weekday() == 6:
-         return JsonResponse({"message": "Sunday appointmentsnot allowed"},status=400)
-    if slot.date > max_date:
-          return JsonResponse({"message": "Only next 3 days allowed"}, status=400)
-    
-    user = request.user
-    Appointment.objects.create(
-        user=user,  # Important
-        doctor=slot.doctor,
-        slot=slot,
-        consultation_type="CLINIC",
-        amount=slot.doctor.consultation_fee,
-        payment_mode="OFFLINE",
-        payment_status="PENDING",
-        status="BOOKED",
-        patient_name=patient_name,
-        age=age,
-        # gender=gender,
-        # health_history=health_history,
-        comments=comments,
-        contact_number=contact_number,
-    )
+    if not isinstance(slot_ids, list):
+        slot_ids = [slot_ids]
 
-    slot.is_available = False
+    if len(patients) != len(slot_ids):
+        return JsonResponse(
+            {"error": "Number of patients must match selected slots."},
+            status=400
+        )
 
-    slot.save()
+    if not contact_number or not contact_number.isdigit() or len(contact_number) != 10:
+        return JsonResponse(
+            {"error": "Valid 10 digit contact number is required."},
+            status=400
+        )
+
+    doctor = get_object_or_404(Doctor, id=doctor_id)
+    max_date = get_staff_clinic_max_date()
+    appointments = []
+
+    with transaction.atomic():
+        for index, slot_id in enumerate(slot_ids):
+            slot = get_object_or_404(
+                TimeSlot.objects.select_for_update(),
+                id=slot_id,
+                doctor=doctor,
+                is_available=True
+            )
+
+            if slot.date < timezone.localdate():
+                return JsonResponse({"error": "Cannot book past dates."}, status=400)
+
+            if slot.date.weekday() == 6:
+                return JsonResponse({"error": "Sunday appointments are not allowed."}, status=400)
+
+            if slot.date > max_date:
+                return JsonResponse(
+                    {"error": "Clinic appointments can only be booked for the next 3 working days."},
+                    status=400
+                )
+
+            patient_name = patients[index].get("patient_name")
+
+            if not patient_name:
+                return JsonResponse({"error": "Patient name is required."}, status=400)
+
+            appointment = Appointment.objects.create(
+                user=request.user,
+                doctor=slot.doctor,
+                slot=slot,
+                booked_by_staff=request.user,
+                consultation_type="CLINIC",
+                amount=slot.doctor.consultation_fee or 0,
+                payment_mode="OFFLINE",
+                payment_status="PENDING",
+                status="BOOKED",
+                patient_name=patient_name,
+                contact_number=contact_number,
+            )
+
+            appointments.append(appointment)
+
+            slot.is_available = False
+            slot.save()
 
     return JsonResponse({
         "success": True,
-        "message": "Clinic appointment booked successfully"
+        "message": "Clinic appointment booked successfully",
+        "appointment_ids": [appointment.id for appointment in appointments],
     })
 
 
@@ -268,13 +356,14 @@ def mark_payment_paid(request, id):
         return redirect("phone_register")
 
     appointment = get_object_or_404(Appointment, id=id)
+    payment_status = request.POST.get("payment_status", "PAID")
 
-    # 🔐 SAFETY: Only allow CLINIC payments to be marked paid
-    if appointment.consultation_type == "CLINIC":
-        appointment.payment_status = "PAID"
+    if payment_status in ["PENDING", "PAID", "UNPAID", "FAILED"]:
+        appointment.payment_status = payment_status
+        if appointment.consultation_type == "CLINIC":
+            appointment.payment_mode = "OFFLINE"
         appointment.save()
 
-    # 🔥 Redirect back to same page
     return redirect(request.META.get("HTTP_REFERER", "staff:staff_dashboard"))
 
 @login_required
@@ -308,37 +397,19 @@ def slots_by_date(request, doctor_id):
     doctor = get_object_or_404(Doctor, id=doctor_id)
 
     appointment_type = request.GET.get("type", "ONLINE")
-    print("TYPE =", appointment_type)
-
-    # 🔥 delete ALL slots for that date
-    TimeSlot.objects.filter(
-        doctor=doctor,
-        date=selected_date,
-        slot_type=appointment_type
-    ).delete()
 
     # ✅ CLINIC = 15 mins
     if appointment_type == "CLINIC":
+        if selected_date < timezone.localdate():
+            return JsonResponse({"slots": []})
 
-        start_time = datetime.combine(selected_date, datetime.strptime("07:30", "%H:%M").time())
-        end_time = datetime.combine(selected_date, datetime.strptime("13:00", "%H:%M").time())
+        if selected_date.weekday() == 6:
+            return JsonResponse({"slots": []})
 
-        while start_time < end_time:
+        if selected_date > get_staff_clinic_max_date():
+            return JsonResponse({"slots": []})
 
-            slot_end = start_time + timedelta(minutes=15)
-
-            TimeSlot.objects.get_or_create(
-                doctor=doctor,
-                date=selected_date,
-                start_time=start_time.time(),
-                end_time=slot_end.time(),
-                defaults={
-                    "is_available": True,
-                    "slot_type": "CLINIC"
-                }
-            )
-
-            start_time = slot_end
+        generate_staff_clinic_slots(doctor, selected_date)
 
     # ✅ ONLINE = 15 mins
     else:
@@ -370,13 +441,21 @@ def slots_by_date(request, doctor_id):
 
             start_time = slot_end
 
-    slots = TimeSlot.objects.filter(
-        doctor=doctor,
-        date=selected_date,
-        is_available=True,
-        slot_type=appointment_type
-
-    ).order_by("start_time")
+    if appointment_type == "CLINIC":
+        slots = TimeSlot.objects.filter(
+            doctor=doctor,
+            date=selected_date,
+            is_available=True,
+            start_time__gte=time(7, 30),
+            end_time__lte=time(15, 0)
+        ).order_by("start_time")
+    else:
+        slots = TimeSlot.objects.filter(
+            doctor=doctor,
+            date=selected_date,
+            is_available=True,
+            slot_type=appointment_type
+        ).order_by("start_time")
 
     return JsonResponse({
         "slots": [

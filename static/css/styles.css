@@ -1,0 +1,194 @@
+/* ==========================
+   DOCTOR APPOINTMENT APP
+   YELLOW + RED THEME
+========================== */
+
+
+:root{
+    --yellow:#FFD700;
+    --dark-yellow:#FFC107;
+    --red:#CC0000;
+    --dark-red:#A00000;
+    --green:#28A745;
+    --white:#FFFFFF;
+    --black:#333333;
+}
+
+/* Body */
+body{
+    background-image: url("/static/images/background2.jpg") !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+
+    font-family: Arial, sans-serif;
+    color: var(--black);
+}
+
+/* Navbar */
+.navbar{
+    background-color:#FFD700 !important;
+}
+
+.navbar-brand{
+    color:#CC0000 !important;
+}
+
+.navbar .btn-outline-light{
+    color:#CC0000 !important;
+    border-color:#CC0000 !important;
+}
+
+.navbar .btn-outline-light:hover{
+    background-color:#28A745 !important;
+    border-color:#28A745 !important;
+    color:white !important;
+}
+/* Cards */
+.card{
+    border:none;
+    border-radius:15px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Main Buttons */
+.btn-primary{
+    background:var(--red);
+    border:none;
+    color:var(--white);
+    padding:12px 25px;
+    border-radius:10px;
+    font-weight:bold;
+    transition:all 0.3s ease;
+}
+
+/* GREEN HOVER EFFECT */
+.btn-primary:hover{
+    background:var(--green);
+    color:white;
+    transform:translateY(-3px);
+    box-shadow:0 6px 15px rgba(40,167,69,0.4);
+}
+
+/* Appointment Button */
+.book-btn{
+    background:var(--red);
+    color:white;
+    border:none;
+    padding:14px 28px;
+    border-radius:30px;
+    font-size:16px;
+    font-weight:bold;
+    transition:0.3s;
+}
+
+.book-btn:hover{
+    background:var(--green);
+    transform:scale(1.05);
+}
+
+/* Form Inputs */
+.form-control{
+    border:2px solid var(--yellow);
+    border-radius:10px;
+    padding:12px;
+}
+
+.form-control:focus{
+    border-color:var(--red);
+    box-shadow:0 0 8px rgba(204,0,0,0.3);
+}
+
+/* Doctor Cards */
+.doctor-card{
+    background:white;
+    border-radius:15px;
+    overflow:hidden;
+    transition:0.3s;
+}
+
+.doctor-card:hover{
+    transform:translateY(-5px);
+    box-shadow:0 8px 20px rgba(0,0,0,0.15);
+}
+
+/* Headings */
+h1,h2,h3,h4,h5{
+    color:var(--red);
+}
+
+/* Alerts */
+.alert-success{
+    background:#d4edda;
+    color:#155724;
+}
+
+.alert-danger{
+    background:#f8d7da;
+    color:#721c24;
+}
+
+/* Mobile Responsive */
+@media(max-width:768px){
+
+    .book-btn,
+    .btn-primary{
+        width:100%;
+        margin-top:10px;
+    }
+
+    .card{
+        margin-bottom:15px;
+    }
+
+    h1{
+        font-size:28px;
+    }
+
+    h2{
+        font-size:24px;
+    }
+}
+/* ==========================
+   ALL BUTTONS STYLE
+========================== */
+
+/* Normal Buttons */
+.btn,
+button,
+input[type="submit"],
+input[type="button"]{
+    background-color: #FFD700 !important; /* Yellow */
+    border-color: #FFD700 !important;
+    color: #333 !important;
+    transition: all 0.3s ease;
+}
+
+/* Hover Effect */
+.btn:hover,
+button:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover{
+    background-color: #CC0000 !important; /* Red */
+    border-color: #CC0000 !important;
+    color: #FFFFFF !important;
+}
+
+/* Mobile Touch Effect */
+.btn:active,
+button:active,
+input[type="submit"]:active,
+input[type="button"]:active{
+    background-color: #CC0000 !important;
+    border-color: #CC0000 !important;
+    color: #FFFFFF !important;
+}
+/* Navbar Logo */
+.navbar-brand img{
+    height:40px;
+    width:40px;
+    object-fit:cover;
+    border-radius:50%;
+    margin-right:10px;
+}

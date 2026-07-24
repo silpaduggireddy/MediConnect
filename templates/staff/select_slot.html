@@ -3,7 +3,7 @@
 
 {% block content %}
 <h3 class="fw-bold mb-3">
-    🏥 Clinic Appointment – {{ doctor.name }}
+    Clinic Appointment - {{ doctor.name }}
 </h3>
 
 <div class="card shadow-sm">
@@ -12,36 +12,59 @@
         <form id="bookingForm">
             {% csrf_token %}
 
-            <!-- DATE PICKER -->
             <div class="mb-3">
-                <label class="form-label fw-semibold">Select Date</label>
+                <label class="form-label fw-semibold">
+                    Select Date <span class="text-danger">*</span>
+                </label>
                 <input
                     type="date"
                     id="datePicker"
                     class="form-control"
-                    min="{{ today }}"
+                    min="{{ today|date:'Y-m-d' }}"
+                    max="{{ max_date|date:'Y-m-d' }}"
                     required
                 >
             </div>
 
-            <!-- SLOT DROPDOWN -->
             <div class="mb-3">
-                <label class="form-label fw-semibold">Available Slots</label>
-                <select
-                    id="slotDropdown"
-                    class="form-select"
-                    disabled
-                    required
-                >
-                    <option>Select date first</option>
+                <label class="form-label fw-bold">
+                    Number of Appointments <span class="text-danger">*</span>
+                </label>
+                <select id="appointmentCount" class="form-select" required>
+                    <option value="">Select Number of Appointments</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
                 </select>
             </div>
 
-            <!-- SUBMIT -->
-            <button
-                type="submit"
-                class="btn btn-success w-100"
-            >
+            <div id="patientDetailsContainer"></div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">
+                    Contact Number <span class="text-danger">*</span>
+                </label>
+                <input
+                    type="tel"
+                    id="contactNumber"
+                    class="form-control"
+                    maxlength="10"
+                    required
+                >
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    Available Slots <span class="text-danger">*</span>
+                </label>
+                <div id="slotContainer">
+                    Select a date first
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100">
                 Book Clinic Appointment
             </button>
         </form>
@@ -50,83 +73,143 @@
 </div>
 
 <script>
-const datePicker   = document.getElementById("datePicker");
-const slotDropdown = document.getElementById("slotDropdown");
-const bookingForm  = document.getElementById("bookingForm");
+const datePicker = document.getElementById("datePicker");
+const slotContainer = document.getElementById("slotContainer");
+const bookingForm = document.getElementById("bookingForm");
+const appointmentCount = document.getElementById("appointmentCount");
+const patientDetailsContainer = document.getElementById("patientDetailsContainer");
 
 const slotsUrl = "{% url 'staff:slots_by_date' doctor.id %}";
-const bookUrl  = "{% url 'staff:book_clinic_appointment' doctor.id %}";
-const csrf     = document.querySelector('[name=csrfmiddlewaretoken]').value;
+const bookUrl = "{% url 'staff:book_clinic_appointment' doctor.id %}";
+const csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
 
-// Initially disable dropdown
-slotDropdown.disabled = true;
+appointmentCount.addEventListener("change", function () {
+    const count = parseInt(this.value || 0);
+    patientDetailsContainer.innerHTML = "";
 
-/* -----------------------------
-   DATE CHANGE → LOAD SLOTS
------------------------------ */
+    for (let i = 1; i <= count; i++) {
+        patientDetailsContainer.innerHTML += `
+            <div class="card mb-3 p-3">
+                <h5>Patient ${i}</h5>
+
+                <div class="mb-2">
+                    <label class="form-label">Name *</label>
+                    <input
+                        type="text"
+                        class="form-control patient-name"
+                        required
+                    >
+                </div>
+            </div>
+        `;
+    }
+});
+
 datePicker.addEventListener("change", function () {
     const selectedDate = this.value;
 
-    // Reset
-    slotDropdown.innerHTML = '<option>Loading slots...</option>';
-    slotDropdown.disabled = true;
+    slotContainer.innerHTML = "Loading slots...";
 
     if (!selectedDate) {
-        slotDropdown.innerHTML = '<option>Select date first</option>';
+        slotContainer.innerHTML = "Select a date first";
         return;
     }
 
-    // ❌ Block weekends
-    const day = new Date(selectedDate).getDay();
-    if (day === 0 || day === 6) {
-        alert("Appointments are not available on weekends");
+    const selected = new Date(selectedDate + "T00:00:00");
+    const minDate = new Date(datePicker.min + "T00:00:00");
+    const maxDate = new Date(datePicker.max + "T00:00:00");
+
+    if (selected < minDate || selected > maxDate) {
+        alert("Clinic appointments can only be booked for the next 3 working days.");
         datePicker.value = "";
-        slotDropdown.innerHTML = '<option>Select a weekday</option>';
+        slotContainer.innerHTML = "<p>Select a valid date</p>";
+        return;
+    }
+
+    if (selected.getDay() === 0) {
+        alert("Sunday appointments are not available.");
+        datePicker.value = "";
+        slotContainer.innerHTML = "<p>Select a working day</p>";
         return;
     }
 
     fetch(`${slotsUrl}?date=${selectedDate}&type=CLINIC`)
         .then(res => res.json())
         .then(data => {
-            slotDropdown.innerHTML = "";
+            slotContainer.innerHTML = "";
 
             if (!data.slots || data.slots.length === 0) {
-                slotDropdown.innerHTML =
-                    '<option value="">No slots available</option>';
+                slotContainer.innerHTML = "<p>No slots available</p>";
                 return;
             }
 
-            slotDropdown.innerHTML =
-                '<option value="">Select a slot</option>'
-
             data.slots.forEach(slot => {
-                const opt = document.createElement("option");
-                opt.value = slot.id;
-                opt.textContent = slot.label;
-                slotDropdown.appendChild(opt);
+                slotContainer.innerHTML += `
+                    <div class="form-check mb-2">
+                        <input
+                            class="form-check-input slot-checkbox"
+                            type="checkbox"
+                            value="${slot.id}"
+                            id="slot_${slot.id}"
+                        >
+                        <label
+                            class="form-check-label"
+                            for="slot_${slot.id}"
+                        >
+                            ${slot.label}
+                        </label>
+                    </div>
+                `;
             });
-
-            slotDropdown.disabled = false;
         })
         .catch(() => {
-            slotDropdown.innerHTML =
-                '<option value="">Error loading slots</option>';
+            slotContainer.innerHTML = "<p>Error loading slots</p>";
         });
 });
 
-/* -----------------------------
-   FINAL BOOKING
------------------------------ */
 bookingForm.addEventListener("submit", function (e) {
     e.preventDefault();
 
-    const slotId = slotDropdown.value;
-    if (!slotId) {
-        alert("Please select a slot");
+    const slotIds = Array.from(
+        document.querySelectorAll(".slot-checkbox:checked")
+    ).map(slot => slot.value);
+
+    const requiredAppointments = parseInt(appointmentCount.value || 0);
+
+    if (!requiredAppointments) {
+        alert("Please select number of appointments.");
         return;
     }
 
-    const btn = bookingForm.querySelector("button");
+    if (slotIds.length !== requiredAppointments) {
+        alert(`Please select exactly ${requiredAppointments} slots.`);
+        return;
+    }
+
+    const patientNames = document.querySelectorAll(".patient-name");
+    const patients = [];
+
+    for (let i = 0; i < patientNames.length; i++) {
+        const patientName = patientNames[i].value.trim();
+
+        if (!patientName) {
+            alert("Patient name is required.");
+            return;
+        }
+
+        patients.push({
+            patient_name: patientName
+        });
+    }
+
+    const contactNumber = document.getElementById("contactNumber").value.trim();
+
+    if (!/^\d{10}$/.test(contactNumber)) {
+        alert("Enter a valid 10 digit contact number.");
+        return;
+    }
+
+    const btn = bookingForm.querySelector("button[type='submit']");
     btn.disabled = true;
     btn.innerText = "Booking...";
 
@@ -136,18 +219,29 @@ bookingForm.addEventListener("submit", function (e) {
             "Content-Type": "application/json",
             "X-CSRFToken": csrf
         },
-        body: JSON.stringify({ slot_id: slotId })
+        body: JSON.stringify({
+            slot_ids: slotIds,
+            patients: patients,
+            contact_number: contactNumber
+        })
     })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message || "Clinic appointment booked successfully");
-        window.location.href = "{% url 'staff:staff_dashboard' %}";
-    })
-    .catch(() => {
-        alert("Something went wrong. Please try again.");
-        btn.disabled = false;
-        btn.innerText = "Book Clinic Appointment";
-    });
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                btn.disabled = false;
+                btn.innerText = "Book Clinic Appointment";
+                return;
+            }
+
+            window.location.href =
+                `/payment/success/?ids=${data.appointment_ids.join(",")}`;
+        })
+        .catch(() => {
+            alert("Something went wrong. Please try again.");
+            btn.disabled = false;
+            btn.innerText = "Book Clinic Appointment";
+        });
 });
 </script>
 

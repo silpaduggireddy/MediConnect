@@ -152,17 +152,38 @@ def confirm_payment(request, appointment_id):
 
 @login_required
 def payment_success(request):
-    appointment_ids = request.session.get("last_appointment_ids", [])
+    ids = request.GET.get("ids", "")
+    appointment_ids = [
+        int(appointment_id)
+        for appointment_id in ids.split(",")
+        if appointment_id.strip().isdigit()
+    ]
+
+    if not appointment_ids:
+        appointment_ids = request.session.get("last_appointment_ids", [])
+
+    if not appointment_ids:
+        appointment_id = request.session.get("last_appointment_id")
+        if appointment_id:
+            appointment_ids = [appointment_id]
 
     appointments = Appointment.objects.filter(
-    id__in=appointment_ids,
-    user=request.user
-)
+        id__in=appointment_ids,
+        user=request.user
+    ).select_related("doctor", "slot").order_by("slot__date", "slot__start_time")
+
+    total_amount = sum(
+        appointment.amount
+        for appointment in appointments
+    )
 
     return render(
         request,
         "payment/success.html",
-        {"appointments": appointments}
+        {
+            "appointments": appointments,
+            "total_amount": total_amount,
+        }
     )
 
 

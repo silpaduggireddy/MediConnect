@@ -59,10 +59,6 @@
         <tr>
             <th>S.No.</th>
             <th>Patient Name</th>
-            <th>Age</th>
-            <!--<th>Gender</th>-->
-            <!--<th>Health history</th>-->
-            <th>Current problem</th>
             <th>Whatsapp</th>
             <th>Slot</th>
             <th>Booked On</th>
@@ -77,10 +73,6 @@
     <tr>
         <td>{{ forloop.counter }}</td>
         <td>{{ a.patient_name }}</td>
-        <td>{{ a.age }}</td>
-        <!--<td>{{ a.gender }}</td>-->
-        <!--<td>{{ a.health_history }}</td>-->
-        <td>{{ a.comments }}</td>
         <td>{{ a.contact_number }}</td>
 
         <td>
@@ -121,18 +113,35 @@
         <!-- ACTIONS -->
         <td>
 
-            <!-- 💰 MARK PAID (ONLY FOR CLINIC & NOT PAID) -->
-            {% if a.consultation_type == "CLINIC" and a.payment_status != "PAID" %}
-                <form method="post"
-                      action="{% url 'staff:staff_mark_paid' a.id %}?next={{ request.get_full_path }}"
-                      class="mb-2">
-                    {% csrf_token %}
-                    <button type="submit"
-                            class="btn btn-sm btn-success w-100">
-                        💰 Mark Paid
-                    </button>
-                </form>
-            {% endif %}
+            <a
+                href="{% url 'staff:download_staff_appointment' a.id %}"
+                class="btn btn-sm btn-outline-primary w-100 mb-2"
+            >
+                Download
+            </a>
+
+            <form method="post"
+                  action="{% url 'staff:staff_mark_paid' a.id %}?next={{ request.get_full_path }}"
+                  class="mb-2">
+                {% csrf_token %}
+                <select name="payment_status"
+                        class="form-select form-select-sm"
+                        onchange="this.form.submit()">
+                    <option selected disabled>Payment Status</option>
+                    <option value="PENDING" {% if a.payment_status == "PENDING" %}selected{% endif %}>
+                        Pending
+                    </option>
+                    <option value="PAID" {% if a.payment_status == "PAID" %}selected{% endif %}>
+                        Paid
+                    </option>
+                    <option value="UNPAID" {% if a.payment_status == "UNPAID" %}selected{% endif %}>
+                        Unpaid
+                    </option>
+                    <option value="FAILED" {% if a.payment_status == "FAILED" %}selected{% endif %}>
+                        Failed
+                    </option>
+                </select>
+            </form>
 
             <!-- UPDATE STATUS -->
             <form method="post"
@@ -162,7 +171,7 @@
 
     {% empty %}
     <tr>
-        <td colspan="6" class="text-center text-muted">
+        <td colspan="8" class="text-center text-muted">
             No appointments found for this date
         </td>
     </tr>

@@ -10,6 +10,7 @@ from datetime import timedelta, datetime, time, date
 from .models import TimeSlot, Appointment, AppointmentReport
 from doctors.models import Doctor
 from django.http import HttpResponse
+from utils.appointment_pdf import build_appointment_confirmation_pdf
 
 # ------------------------
 # HOLIDAYS
@@ -495,10 +496,19 @@ def get_online_booking_dates():
 @login_required
 def select_slot(request, doctor_id):
     doctor = get_object_or_404(Doctor, id=doctor_id)
+    online_booking_dates = [
+        booking_date.isoformat()
+        for booking_date in get_online_booking_dates()
+    ]
+
     return render(
         request,
         "appointments/select_slot.html",
-        {"doctor": doctor, "today": timezone.now().date()}
+        {
+            "doctor": doctor,
+            "today": timezone.now().date(),
+            "online_booking_dates": online_booking_dates,
+        }
     )
 
 
@@ -631,13 +641,22 @@ from django.shortcuts import redirect
 
 from django.http import FileResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
-from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from io import BytesIO
 from .models import Appointment
 
 @login_required
 def download_invoice(request, appointment_id):
-    appointment = get_object_or_404(Appointment, id=appointment_id, user=request.user)
+    appointment = get_object_or_404(
+        Appointment.objects.select_related("doctor", "slot", "user"),
+        id=appointment_id,
+        user=request.user
+    )
 
     # Allow download only after confirmation
     if appointment.consultation_type == "ONLINE" and appointment.payment_status != "PAID":
@@ -646,28 +665,19 @@ def download_invoice(request, appointment_id):
     if appointment.consultation_type == "CLINIC" and appointment.status != "BOOKED":
         return HttpResponseForbidden("Invalid appointment")
 
-    # Create PDF in memory
-    buffer = BytesIO()
-    p = canvas.Canvas(buffer)
+    related_appointments = Appointment.objects.filter(
+        user=request.user,
+        doctor=appointment.doctor,
+        slot__date=appointment.slot.date,
+        patient_name=appointment.patient_name,
+        consultation_type=appointment.consultation_type,
+        status=appointment.status
+    ).select_related("doctor", "slot").order_by("slot__start_time")
 
-    # Example content
-    p.setFont("Helvetica", 14)
-    p.drawString(100, 750, "Appointment Confirmation")
-    p.setFont("Helvetica", 12)
-    p.drawString(100, 720, f"Appointment ID: {appointment.id}")
-    p.drawString(100, 700, f"Doctor: {appointment.doctor.name}")
-    p.drawString(100, 680, f"Patient: {appointment.patient_name}")
-    p.drawString(100, 660, f"Consultation Type: {appointment.consultation_type}")
-    p.drawString(100, 640, f"Date: {appointment.slot.date}")
-    p.drawString(100, 620, f"Time: {appointment.slot.start_time}-{appointment.slot.end_time}")
-    p.drawString(100, 600, f"Status: {appointment.status}")
-    p.drawString(100, 580, f"Payment Status: {appointment.payment_status}")
-
-    p.showPage()
-    p.save()
-
-    buffer.seek(0)
-    return FileResponse(buffer, as_attachment=True, filename=f"appointment_{appointment.patient_name}_{appointment.slot}.pdf")
+    return build_appointment_confirmation_pdf(
+        appointment,
+        list(related_appointments)
+    )
 
 
 @login_required
